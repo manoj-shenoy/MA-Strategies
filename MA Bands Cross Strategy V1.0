@@ -1,0 +1,78 @@
+//@version=4
+
+strategy("MA Bands Cross Strategy V1.0",
+          overlay=true,
+          process_orders_on_close=true,
+          initial_capital=1500,
+          currency='USD',
+          default_qty_type=strategy.percent_of_equity,
+          default_qty_value=100,
+          commission_type=strategy.commission.percent,
+          commission_value=0.1)
+
+startDate = input(title="Start Date", type=input.integer,
+     defval=1, minval=1, maxval=31)
+
+startMonth = input(title="Start Month", type=input.integer,
+     defval=1, minval=1, maxval=12)
+
+startYear = input(title="Start Year", type=input.integer,
+     defval=2019, minval=1900, maxval=2100)
+
+    
+endDate = input(title="End Date", type=input.integer,
+     defval=31, minval=1, maxval=31)
+
+endMonth = input(title="End Month", type=input.integer,
+     defval=12, minval=1, maxval=12)
+
+endYear = input(title="End Year", type=input.integer,
+     defval=2030, minval=1900, maxval=2100)
+
+inDateRange = (time >= timestamp(syminfo.timezone, startYear,
+         startMonth, startDate, 0, 0)) and
+     (time < timestamp(syminfo.timezone, endYear, endMonth, endDate, 0, 0))
+
+upperMA_period = input(defval=30, title="Upper Band", type=input.integer, minval=1)
+lowerMA_period = input(defval=30, title="Lower Band", type=input.integer, minval=1)
+
+MA_type = input(defval="vwma", title="Moving Avg Type", type=input.string, options=["vwma", "ema", "sma"])
+
+uppersrc = high
+lowersrc = low
+ 
+Upper_MA = vwma(uppersrc, upperMA_period)
+Lower_MA = vwma(lowersrc, lowerMA_period)
+
+plot(Upper_MA, linewidth=3, color=color.green)
+plot(Lower_MA, linewidth=3, color=color.red)
+
+if(MA_type=="vwma")
+    Upper_MA := vwma(uppersrc, upperMA_period)
+    Lower_MA := vwma(lowersrc, lowerMA_period) 
+
+else if(MA_type=="sma")
+    Upper_MA := sma(uppersrc, upperMA_period)
+    Lower_MA := sma(lowersrc, lowerMA_period) 
+
+else if(MA_type=="ema")
+    Upper_MA := ema(uppersrc, upperMA_period)
+    Lower_MA := ema(lowersrc, lowerMA_period)
+
+long_signal = crossover(close, Upper_MA)
+short_signal = crossunder(close, Lower_MA)
+
+if(inDateRange and long_signal)
+    strategy.entry(id="EmaCrossLE", long=strategy.long, when = close > high[1], comment="long entry")
+
+if(inDateRange and short_signal)
+    // strategy.entry(id="EmaCrossSE", long=strategy.short, comment="short entry")
+    strategy.close(id="EmaCrossLE",qty_percent=100)
+    
+if(inDateRange and short_signal)
+    strategy.entry(id="EmaCrossSE", long=strategy.short, when = close < low[1], comment="short entry")
+
+if(inDateRange and long_signal)
+    // strategy.entry(id="EmaCrossSE", long=strategy.short, comment="short entry")
+    strategy.close(id="EmaCrossSE",qty_percent=100)    
+    
