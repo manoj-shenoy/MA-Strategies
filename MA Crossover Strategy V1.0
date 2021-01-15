@@ -1,0 +1,96 @@
+//@version=4
+strategy("MA Crossover Strategy V1.0", 
+          overlay=true,
+          process_orders_on_close=true,
+          initial_capital=5000,
+          currency='USD',
+          default_qty_type=strategy.percent_of_equity,
+          default_qty_value=100,
+          commission_type=strategy.commission.percent,
+          commission_value=0.1,
+          slippage=100)
+          
+startDate = input(title="Start Date", type=input.integer,
+     defval=1, minval=1, maxval=31)
+startMonth = input(title="Start Month", type=input.integer,
+     defval=1, minval=1, maxval=12)
+startYear = input(title="Start Year", type=input.integer,
+     defval=2019, minval=1900, maxval=2100)
+     
+endDate = input(title="End Date", type=input.integer,
+     defval=31, minval=1, maxval=31)
+endMonth = input(title="End Month", type=input.integer,
+     defval=12, minval=1, maxval=12)
+endYear = input(title="End Year", type=input.integer,
+     defval=2030, minval=1900, maxval=2100)
+
+inDateRange = (time >= timestamp(syminfo.timezone, startYear,
+         startMonth, startDate, 0, 0)) and
+     (time < timestamp(syminfo.timezone, endYear, endMonth, endDate, 0, 0))
+ 
+trade_type = input(defval='both', title="Trade Direction", type=input.string, options=['both', 'long', 'short'])
+
+fast_period = input(defval=13, title="Fast MA", type=input.integer, minval=1)
+slow_period = input(defval=20, title="Slow MA", type=input.integer, minval=1)
+
+MA_type = input(defval="sma", title="Moving Avg Type", type=input.string, options=["ema", "sma"])
+
+long_trade_pos_size = input(defval=100, title="Long Trade Pos. Size (% Equity)", type=input.integer)
+short_trade_pos_size = input(defval=100, title="Short Trade Pos. Size (% Equity)", type=input.integer)
+
+max_pos_size = input(defval=10000, title="Max Pos. Size (Contracts)", type=input.integer)
+
+src = close
+
+fast_MA = sma(src, fast_period)
+slow_MA = sma(src, slow_period)
+
+plot(fast_MA, linewidth=2, color=color.blue)
+plot(slow_MA, linewidth=2, color=color.red)
+
+if(MA_type=="sma")
+    fast_MA := sma(src, fast_period)
+    slow_MA := sma(src, slow_period)
+else if(MA_type=="ema")
+    fast_MA := ema(src, fast_period)
+    slow_MA := ema(src, slow_period)
+
+long_signal = crossover(fast_MA, slow_MA)
+short_signal = crossunder(fast_MA, slow_MA)
+
+
+if(trade_type=="both")
+    if((strategy.equity/close)<=max_pos_size)
+        if(inDateRange and long_signal)
+            strategy.entry(id="EmaCrossLE", long=strategy.long, qty=(strategy.equity*(long_trade_pos_size/100))/close, comment="long entry")
+        if(inDateRange and short_signal)
+            strategy.entry(id="EmaCrossSE", long=strategy.short, qty=(strategy.equity*(short_trade_pos_size/100))/close, comment="short entry")
+    else if((strategy.equity/close)>max_pos_size)
+        if(inDateRange and long_signal)
+            strategy.entry(id="EmaCrossLE", long=strategy.long, qty=max_pos_size, comment="long entry")
+        if(inDateRange and short_signal)
+            strategy.entry(id="EmaCrossSE", long=strategy.short, qty=max_pos_size, comment="short entry")
+
+if(trade_type=="long")
+    if((strategy.equity/close)<=max_pos_size)
+        if(inDateRange and long_signal)
+            strategy.entry(id="EmaCrossLE", long=strategy.long, qty=(strategy.equity*(long_trade_pos_size/100))/close, comment="long entry")
+        if(inDateRange and short_signal)
+            strategy.close(id="EmaCrossLE", qty_percent=100)
+    else if((strategy.equity/close)>max_pos_size)
+        if(inDateRange and long_signal)
+            strategy.entry(id="EmaCrossLE", long=strategy.long, qty=max_pos_size, comment="long entry")
+        if(inDateRange and short_signal)
+            strategy.close(id="EmaCrossLE", qty_percent=100)
+    
+if(trade_type=="short")
+    if((strategy.equity/close)<=max_pos_size)    
+        if(inDateRange and short_signal)
+            strategy.entry(id="EmaCrossSE", long=strategy.short, qty=(strategy.equity*(short_trade_pos_size/100))/close, comment="short entry")
+        if(inDateRange and long_signal)
+            strategy.close(id="EmaCrossSE", qty_percent=100)
+    else if((strategy.equity/close)>max_pos_size)
+        if(inDateRange and short_signal)
+            strategy.entry(id="EmaCrossSE", long=strategy.short, qty=max_pos_size, comment="short entry")
+        if(inDateRange and long_signal)
+            strategy.close(id="EmaCrossSE", qty_percent=100)
