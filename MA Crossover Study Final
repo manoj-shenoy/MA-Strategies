@@ -1,0 +1,62 @@
+//@version=4
+study("MA Crossover Study Final", overlay=true)
+
+startDate = input(title="Start Date", type=input.integer,
+     defval=1, minval=1, maxval=31)
+startMonth = input(title="Start Month", type=input.integer,
+     defval=1, minval=1, maxval=12)
+startYear = input(title="Start Year", type=input.integer,
+     defval=2019, minval=1900, maxval=2100)
+     
+endDate = input(title="End Date", type=input.integer,
+     defval=31, minval=1, maxval=31)
+endMonth = input(title="End Month", type=input.integer,
+     defval=12, minval=1, maxval=12)
+endYear = input(title="End Year", type=input.integer,
+     defval=2030, minval=1900, maxval=2100)
+
+inDateRange = (time >= timestamp(syminfo.timezone, startYear,
+         startMonth, startDate, 0, 0)) and
+     (time < timestamp(syminfo.timezone, endYear, endMonth, endDate, 0, 0))
+
+fast_period = input(defval=50, title="Fast MA", type=input.integer, minval=1)
+slow_period = input(defval=100, title="Slow MA", type=input.integer, minval=1)
+
+MA_type = input(defval="sma", title="Moving Avg Type", type=input.string, options=["ema", "sma"])
+
+src = close
+
+fast_MA = sma(src, fast_period)
+slow_MA = sma(src, slow_period)
+
+plot(fast_MA, linewidth=2, color=color.blue)
+plot(slow_MA, linewidth=2, color=color.red)
+
+if(MA_type=="sma")
+    fast_MA := sma(src, fast_period)
+    slow_MA := sma(src, slow_period)
+else if(MA_type=="ema")
+    fast_MA := ema(src, fast_period)
+    slow_MA := ema(src, slow_period)
+
+crossUpper = crossover(fast_MA, slow_MA)
+crossLower = crossunder(fast_MA, slow_MA)
+
+pyram  = input(1, "Pyramiding", minval=1)
+
+pos = 0
+
+long_signal  = nz(pos[1]) <  pyram and crossUpper
+short_signal = nz(pos[1]) > -pyram and crossLower
+
+pos := nz(pos[1]) < 0 and long_signal ? 1 :
+       long_signal ? nz(pos[1]) + 1 :
+       nz(pos[1]) > 0 and short_signal ? -1 :
+       short_signal ? nz(pos[1]) - 1 :
+       nz(pos[1])
+
+plotshape(long_signal, location=location.belowbar,  color=color.blue, style=shape.arrowup,   text="Long Entry",  title='Buy')
+plotshape(short_signal, location=location.abovebar, color=color.red,  style=shape.arrowdown, text="Short Entry", title='Sell')
+
+alertcondition(long_signal, title="Long Signal")
+alertcondition(short_signal, title="Short Signal")
