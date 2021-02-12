@@ -1,0 +1,80 @@
+//@version=4
+strategy("MACD + ADX Strategy", overlay=true)
+
+startDate = input(title="Start Date", type=input.integer,
+     defval=1, minval=1, maxval=31)
+startMonth = input(title="Start Month", type=input.integer,
+     defval=1, minval=1, maxval=12)
+startYear = input(title="Start Year", type=input.integer,
+     defval=2018, minval=1900, maxval=2100)
+     
+endDate = input(title="End Date", type=input.integer,
+     defval=1, minval=1, maxval=31)
+endMonth = input(title="End Month", type=input.integer,
+     defval=1, minval=1, maxval=12)
+endYear = input(title="End Year", type=input.integer,
+     defval=2020, minval=1900, maxval=2100)
+
+inDateRange = (time >= timestamp(syminfo.timezone, startYear,
+         startMonth, startDate, 0, 0)) and
+     (time < timestamp(syminfo.timezone, endYear, endMonth, endDate, 0, 0))
+
+fastLength = input(12)
+slowlength = input(26)
+MACDLength = input(9)
+
+MACD = ema(close, fastLength) - ema(close, slowlength)
+aMACD = ema(MACD, MACDLength)
+delta = MACD - aMACD
+
+
+// study(title="CM_ADX_V1", shorttitle="CM_ADX_V1")
+len = input(14, minval=1, title="DI Length")
+lensig = input(14, title="ADX Smoothing", minval=1, maxval=50)
+
+adx_emalen = input(20, title="ADX EMA", minval=1, maxval=50)
+
+up = change(high)
+down = -change(low)
+trur = rma(tr, len)
+
+plus = fixnan(100 * rma(up > down and up > 0 ? up : 0, len) / trur)
+minus = fixnan(100 * rma(down > up and down > 0 ? down : 0, len) / trur)
+
+sum = plus + minus 
+adx = 100 * rma(abs(plus - minus) / (sum == 0 ? 1 : sum), lensig)
+
+adx_signalline = ema(adx,adx_emalen)
+
+
+// col = adx <= 10 ? color.gray : adx > 10 and adx <= 20 ? color.aqua : adx > 20 and adx <= 40 ? color.green : adx > 40 ? color.orange : color.yellow
+
+//plot(plus, color=lime, title="+DI", style=line, linewidth=3)
+//plot(minus, color=red, title="-DI", style=line, linewidth=3)
+// plot(adx, color=color.white, title="ADX")
+// plot(0, title="0 Line", style=line, linewidth=3, color=color.gray)
+// plot(0, title="0 Line", style=circles, linewidth=3, color=color.color.gray)
+// plot(10, title="10 Line", style=line, linewidth=3, color=color.aqua)
+// plot(10, title="10 Line", style=circles, linewidth=3, color=color.aqua)
+// plot(20, title="20 Line", style=line, linewidth=3, color=color.green)
+// plot(20, title="20 Line", style=circles, linewidth=3, color=color.green)
+// plot(40, title="10 Line", style=line, linewidth=3, color=color.orange)
+// plot(40, title="10 Line", style=circles, linewidth=3, color=color.orange)
+
+
+if (inDateRange and delta > 0 and adx_signalline > adx and adx > 20)
+    strategy.entry("MacdLE", strategy.long, comment="LongEntry")
+
+if (inDateRange and delta < 0 and adx_signalline > adx and adx > 20)
+    strategy.entry("MacdSE", strategy.short, comment="ShortEntry")
+
+//plot(strategy.equity, title="equity", color=color.red, linewidth=2, style=plot.style_areabr)
+
+
+// if (crossover(delta, 0))
+//     strategy.entry("MacdLE", strategy.long, comment="MacdLE")
+
+// if (crossunder(delta, 0))
+//     strategy.entry("MacdSE", strategy.short, comment="MacdSE")
+
+//plot(strategy.equity, title="equity", color=color.red, linewidth=2, style=plot.style_areabr)
