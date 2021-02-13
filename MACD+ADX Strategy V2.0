@@ -49,21 +49,15 @@ TP_perc = input(2, title="Profit Target (%)", type=input.float, minval=0.5, step
 longExitPrice  = strategy.position_avg_price * (1 + TP_perc)
 shortExitPrice = strategy.position_avg_price * (1 - TP_perc)
 
-// Plot take profit values for confirmation
-//plot(series=(strategy.position_size > 0) ? longExitPrice : na,
-//     color=color.green, style=plot.style_circles,
-//     linewidth=3, title="Long Take Profit")
-//plot(series=(strategy.position_size < 0) ? shortExitPrice : na,
-//     color=color.red, style=plot.style_circles,
-//     linewidth=3, title="Short Take Profit")
+adx_threshold = input(21, title="ADX threshold", minval=1, maxval=50)
 
-if (inDateRange and delta > 0 and adx_signalline > adx and adx > 20)
+if (inDateRange and delta > 0 and adx_signalline > adx and adx > adx_threshold)
     strategy.close(id="MacdSE")
     strategy.entry("MacdLE", strategy.long, comment="LongEntry")
 if (strategy.position_size > 0)
     strategy.exit(id="LongTP", limit=longExitPrice)
 
-if (inDateRange and delta < 0 and adx_signalline > adx and adx > 20)
+if (inDateRange and delta < 0 and adx_signalline > adx and adx > adx_threshold)
     strategy.close(id="MacdLE")
     strategy.entry("MacdSE", strategy.short, comment="ShortEntry")
 if (strategy.position_size < 0)
