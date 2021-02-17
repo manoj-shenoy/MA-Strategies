@@ -1,0 +1,64 @@
+//@version=4
+study("MACD + ADX Study Final", overlay=true)
+
+startDate = input(title="Start Date", type=input.integer,
+     defval=1, minval=1, maxval=31)
+startMonth = input(title="Start Month", type=input.integer,
+     defval=1, minval=1, maxval=12)
+startYear = input(title="Start Year", type=input.integer,
+     defval=2019, minval=1900, maxval=2100)
+
+endDate = input(title="End Date", type=input.integer,
+     defval=31, minval=1, maxval=31)
+endMonth = input(title="End Month", type=input.integer,
+     defval=12, minval=1, maxval=12)
+endYear = input(title="End Year", type=input.integer,
+     defval=2030, minval=1900, maxval=2100)
+
+inDateRange = (time >= timestamp(syminfo.timezone, startYear,
+         startMonth, startDate, 0, 0)) and
+     (time < timestamp(syminfo.timezone, endYear, endMonth, endDate, 0, 0))
+
+pyram  = input(1, "Pyramiding", minval=1)
+
+fastLength = input(12)
+slowlength = input(26)
+MACDLength = input(9)
+
+MACD = ema(close, fastLength) - ema(close, slowlength)
+aMACD = ema(MACD, MACDLength)
+delta = MACD - aMACD
+
+len = input(14, minval=1, title="DI Length")
+lensig = input(14, title="ADX Smoothing", minval=1, maxval=50)
+
+adx_emalen = input(20, title="ADX EMA", minval=1, maxval=50)
+
+up = change(high)
+down = -change(low)
+trur = rma(tr, len)
+
+plus = fixnan(100 * rma(up > down and up > 0 ? up : 0, len) / trur)
+minus = fixnan(100 * rma(down > up and down > 0 ? down : 0, len) / trur)
+
+sum = plus + minus 
+adx = 100 * rma(abs(plus - minus) / (sum == 0 ? 1 : sum), lensig)
+
+adx_signalline = ema(adx,adx_emalen)
+
+pos = 0
+
+long_signal  = nz(pos[1]) <  pyram and delta > 0 and adx_signalline > adx and adx > 20
+short_signal = nz(pos[1]) > -pyram and delta < 0 and adx_signalline > adx and adx > 20
+
+pos := nz(pos[1]) < 0 and long_signal ? 1 :
+       long_signal ? nz(pos[1]) + 1 :
+       nz(pos[1]) > 0 and short_signal ? -1 :
+       short_signal ? nz(pos[1]) - 1 :
+       nz(pos[1])
+
+plotshape(long_signal, location=location.belowbar,  color=color.blue, style=shape.arrowup,   text="Long Entry",  title='Buy')
+plotshape(short_signal, location=location.abovebar, color=color.red,  style=shape.arrowdown, text="Short Entry", title='Sell')
+
+alertcondition(long_signal, title="Long Signal")
+alertcondition(short_signal, title="Short Signal")
