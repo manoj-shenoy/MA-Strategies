@@ -34,6 +34,10 @@ lensig = input(14, title="ADX Smoothing", minval=1, maxval=50)
 
 adx_emalen = input(20, title="ADX EMA", minval=1, maxval=50)
 
+tp_perc = (input(30, title="Profit Target (%)", minval=0, step=0.1)/100)
+
+adx_threshold = input(21, title="ADX threshold", minval=1, maxval=50)
+
 up = change(high)
 down = -change(low)
 trur = rma(tr, len)
@@ -48,17 +52,34 @@ adx_signalline = ema(adx,adx_emalen)
 
 pos = 0
 
-long_signal  = nz(pos[1]) <  pyram and delta > 0 and adx_signalline > adx and adx > 20
-short_signal = nz(pos[1]) > -pyram and delta < 0 and adx_signalline > adx and adx > 20
+long_signal  = nz(pos[1]) <  pyram and delta > 0 and adx_signalline > adx and adx > adx_threshold
+short_signal = nz(pos[1]) > -pyram and delta < 0 and adx_signalline > adx and adx > adx_threshold
+
+long_entry_price = valuewhen(long_signal, close, 0)
+short_entry_price = valuewhen(short_signal, close, 0)
+
+long_TP = long_entry_price * (1 + tp_perc)
+short_TP = short_entry_price * (1 - tp_perc)
+
+long_TP_hit = pos[1]>0 and high>=long_TP
+short_TP_hit = pos[1]<0 and low<=short_TP
 
 pos := nz(pos[1]) < 0 and long_signal ? 1 :
        long_signal ? nz(pos[1]) + 1 :
        nz(pos[1]) > 0 and short_signal ? -1 :
        short_signal ? nz(pos[1]) - 1 :
+       nz(pos[1]) > 0 and long_TP_hit ? 0 :
+       nz(pos[1]) < 0 and short_TP_hit ? 0 :
        nz(pos[1])
 
 plotshape(long_signal, location=location.belowbar,  color=color.blue, style=shape.arrowup,   text="Long Entry",  title='Buy')
 plotshape(short_signal, location=location.abovebar, color=color.red,  style=shape.arrowdown, text="Short Entry", title='Sell')
 
+plotshape(long_TP_hit, location=location.belowbar,  color=color.blue, style=shape.arrowup,   text="Long TP",  title='Long TP')
+plotshape(short_TP_hit, location=location.abovebar, color=color.red,  style=shape.arrowdown, text="Short TP", title='Short TP')
+
 alertcondition(long_signal, title="Long Signal")
 alertcondition(short_signal, title="Short Signal")
+
+alertcondition(long_TP_hit, title="Long TP Hit")
+alertcondition(short_TP_hit, title="Short TP Hit")
