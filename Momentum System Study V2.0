@@ -21,7 +21,7 @@ inDateRange = (time >= timestamp(syminfo.timezone, startYear,
 
 pyram  = input(1, "Pyramiding", minval=1)
 
-filter_type = input(title="Market Filter Type", defval="EMA Cross", options=["EMA Cross", "Above 20 SMA"])
+filter_type = input(title="Market Filter Type", defval="EMA Cross", options=["EMA Cross", "Above 20 SMA", "None"])
 btc_fast_ema = input(50, "BTC Fast EMA Lookback")
 btc_slow_ema = input(100, "BTC Slow EMA Lookback")
 
@@ -38,6 +38,8 @@ if(filter_type == "EMA Cross")
     market_index_filter := ema_50 > ema_100
 else if(filter_type == "Above 20 SMA")
     market_index_filter := market_index_low > market_index_20_day_high
+else if(filter_type == "None")
+    market_index_filter := 1
 
 entry_cond_lookback = input(20, "Entry Condition Lookback")
 exit_cond_lookback = input(10, "Exit Condition Lookback")
@@ -50,7 +52,7 @@ plot(exit_cond)
 
 pos = 0
 
-long_signal = inDateRange and nz(pos[1]) < pyram and market_index_filter and high > entry_cond
+long_signal = inDateRange and nz(pos[1]) < pyram and high > entry_cond and market_index_filter
 exit_signal = inDateRange and nz(pos[1]) > 0 and low < exit_cond
 
 pos := nz(pos[1]) < 1 and long_signal ? 1 :
