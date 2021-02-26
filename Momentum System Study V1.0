@@ -1,5 +1,5 @@
 //@version=4
-study("Momentum System Study V1.0", overlay=true)
+study("Momentum System Study V2.0", overlay=true)
 
 startDate = input(title="Start Date", type=input.integer,
      defval=1, minval=1, maxval=31)
@@ -21,19 +21,37 @@ inDateRange = (time >= timestamp(syminfo.timezone, startYear,
 
 pyram  = input(1, "Pyramiding", minval=1)
 
+filter_type = input(title="Market Filter Type", defval="EMA Cross", options=["EMA Cross", "Above 20 SMA"])
+btc_fast_ema = input(50, "BTC Fast EMA Lookback")
+btc_slow_ema = input(100, "BTC Slow EMA Lookback")
+
 market_index = "BINANCE:BTCUSDT"
+market_index_close = security(market_index, 'D', close)
 market_index_low = security(market_index, 'D', low)
 market_index_high = security(market_index, 'D', high)
 market_index_20_day_high = sma(market_index_high, 20)
-market_index_filter = market_index_low > market_index_20_day_high
+ema_50 = ema(market_index_close, btc_fast_ema)
+ema_100 = ema(market_index_close, btc_slow_ema)
+market_index_filter = ema_50 > ema_100
 
-plot(highest(high, 20)[1])
-plot(lowest(low, 10)[1])
+if(filter_type == "EMA Cross")
+    market_index_filter := ema_50 > ema_100
+else if(filter_type == "Above 20 SMA")
+    market_index_filter := market_index_low > market_index_20_day_high
+
+entry_cond_lookback = input(20, "Entry Condition Lookback")
+exit_cond_lookback = input(10, "Exit Condition Lookback")
+
+entry_cond = highest(high, entry_cond_lookback)[1]
+exit_cond = lowest(low, exit_cond_lookback)[1]
+
+plot(entry_cond)
+plot(exit_cond)
 
 pos = 0
 
-long_signal = inDateRange and nz(pos[1]) < pyram and market_index_filter and close > highest(high, 20)[1]
-exit_signal = inDateRange and nz(pos[1]) > 0 and low < lowest(low, 10)[1]
+long_signal = inDateRange and nz(pos[1]) < pyram and market_index_filter and high > entry_cond
+exit_signal = inDateRange and nz(pos[1]) > 0 and low < exit_cond
 
 pos := nz(pos[1]) < 1 and long_signal ? 1 :
        long_signal ? nz(pos[1]) + 1 :
