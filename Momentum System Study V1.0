@@ -1,0 +1,48 @@
+//@version=4
+study("Momentum System Study V1.0", overlay=true)
+
+startDate = input(title="Start Date", type=input.integer,
+     defval=1, minval=1, maxval=31)
+startMonth = input(title="Start Month", type=input.integer,
+     defval=1, minval=1, maxval=12)
+startYear = input(title="Start Year", type=input.integer,
+     defval=2020, minval=1900, maxval=2100)
+
+endDate = input(title="End Date", type=input.integer,
+     defval=31, minval=1, maxval=31)
+endMonth = input(title="End Month", type=input.integer,
+     defval=12, minval=1, maxval=12)
+endYear = input(title="End Year", type=input.integer,
+     defval=2030, minval=1900, maxval=2100)
+
+inDateRange = (time >= timestamp(syminfo.timezone, startYear,
+         startMonth, startDate, 0, 0)) and
+     (time < timestamp(syminfo.timezone, endYear, endMonth, endDate, 0, 0))
+
+pyram  = input(1, "Pyramiding", minval=1)
+
+market_index = "BINANCE:BTCUSDT"
+market_index_low = security(market_index, 'D', low)
+market_index_high = security(market_index, 'D', high)
+market_index_20_day_high = sma(market_index_high, 20)
+market_index_filter = market_index_low > market_index_20_day_high
+
+plot(highest(high, 20)[1])
+plot(lowest(low, 10)[1])
+
+pos = 0
+
+long_signal = inDateRange and nz(pos[1]) < pyram and market_index_filter and close > highest(high, 20)[1]
+exit_signal = inDateRange and nz(pos[1]) > 0 and low < lowest(low, 10)[1]
+
+pos := nz(pos[1]) < 1 and long_signal ? 1 :
+       long_signal ? nz(pos[1]) + 1 :
+       nz(pos[1]) > 0 and exit_signal ? 0 :
+       exit_signal ? nz(pos[1]) - 1 :
+       nz(pos[1])
+
+plotshape(long_signal, location=location.belowbar,  color=color.blue, style=shape.arrowup,   text="Long Entry",  title='Buy')
+plotshape(exit_signal, location=location.abovebar, color=color.red,  style=shape.arrowdown, text="Long Exit", title='Sell')
+
+alertcondition(long_signal, title="Long Signal")
+alertcondition(exit_signal, title="Exit Signal")
