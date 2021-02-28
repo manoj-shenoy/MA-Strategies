@@ -73,7 +73,7 @@ plot(exit_cond,color=color.orange,linewidth=3)
 
 pos = 0
 
-long_signal = inDateRange and nz(pos[1]) < pyram and close > entry_cond and market_index_filter and coin_filter //Coin Filter added
+long_signal = inDateRange and nz(pos[1]) < pyram and high > entry_cond and market_index_filter and coin_filter //Coin Filter added
 exit_signal = inDateRange and nz(pos[1]) > 0 and low < exit_cond
 
 pos := nz(pos[1]) < 1 and long_signal ? 1 :
