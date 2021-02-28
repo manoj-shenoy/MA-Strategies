@@ -70,6 +70,8 @@ exit_cond = lowest(low, exit_cond_lookback)[1]
 
 plot(entry_cond,color=color.blue,linewidth=3)
 plot(exit_cond,color=color.orange,linewidth=3)
+plot(coin_ema_50,color=color.green,linewidth=3)
+plot(coin_ema_200,color=color.red,linewidth=3)
 
 pos = 0
 
