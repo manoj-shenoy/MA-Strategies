@@ -1,0 +1,101 @@
+//@version=4
+strategy("Turtle System Strategy V1.0",
+          overlay=true,
+          process_orders_on_close=true,
+          calc_on_order_fills=false,
+          initial_capital=1,
+          currency='BTC',
+          default_qty_type=strategy.percent_of_equity,
+          default_qty_value=100,
+          commission_type=strategy.commission.percent,
+          commission_value=0.1)
+
+startDate = input(title="Start Date", type=input.integer,
+     defval=1, minval=1, maxval=31)
+startMonth = input(title="Start Month", type=input.integer,
+     defval=1, minval=1, maxval=12)
+startYear = input(title="Start Year", type=input.integer,
+     defval=2017, minval=1900, maxval=2100)
+
+endDate = input(title="End Date", type=input.integer,
+     defval=31, minval=1, maxval=31)
+endMonth = input(title="End Month", type=input.integer,
+     defval=12, minval=1, maxval=12)
+endYear = input(title="End Year", type=input.integer,
+     defval=2030, minval=1900, maxval=2100)
+
+inDateRange = (time >= timestamp(syminfo.timezone, startYear,
+         startMonth, startDate, 0, 0)) and
+     (time < timestamp(syminfo.timezone, endYear, endMonth, endDate, 0, 0))
+
+market_filter_type = input(title="Market Filter Type", defval="EMA Cross", options=["EMA Cross", "Above 20 SMA", "None"])
+
+coin_filter_type = input(title="Coin Filter Type", defval="EMA Cross", options=["EMA Cross", "Above 20 SMA", "None"]) // New Addition
+
+btc_fast_ema = input(50, "BTC Fast EMA Lookback")
+btc_slow_ema = input(200, "BTC Slow EMA Lookback")
+
+coin_fast_ema = input(50, "Coin Fast EMA Lookback")                     // New Addition
+coin_slow_ema = input(200, "Coin Slow EMA Lookback")                    // New Addition
+
+//ATR Definition with EMA (built in ATR uses RMA)
+pine_atr(length) =>
+    trueRange = na(high[1])? high-low : max(max(high - low, abs(high - close[1])), abs(low - close[1]))
+    //true range can be also calculated with tr(true)
+    ema(trueRange, length)
+
+market_index = "BINANCE:BTCUSDT"
+market_index_close = security(market_index, 'D', close)
+market_index_low = security(market_index, 'D', low)
+market_index_high = security(market_index, 'D', high)
+market_index_20_day_high = sma(market_index_high, 20)
+btc_ema_50 = ema(market_index_close, btc_fast_ema)
+btc_ema_200 = ema(market_index_close, btc_slow_ema)
+market_index_filter = btc_ema_50 > btc_ema_200
+
+
+coin_20_day_high = sma(high, 20)                                        // New Addition
+coin_ema_50 = ema(close, coin_fast_ema)                                 // New Addition
+coin_ema_200 = ema(close, coin_slow_ema)                                // New Addition
+coin_filter = coin_ema_50 > coin_ema_200                                // New Addition
+
+
+if(market_filter_type == "EMA Cross")
+    market_index_filter := btc_ema_50 > btc_ema_200
+else if(market_filter_type == "Above 20 SMA")
+    market_index_filter := market_index_close > market_index_20_day_high //Logic Modified
+else if(market_filter_type == "None")
+    market_index_filter := 1
+
+if(coin_filter_type == "EMA Cross")                                     // New Addition
+    coin_filter := coin_ema_50 > coin_ema_200                           // New Addition
+else if(coin_filter_type == "Above 20 SMA")                             // New Addition    
+    coin_filter := close > coin_20_day_high                             // New Addition & Logic Modified
+else if(coin_filter_type == "None")                                     // New Addition
+    coin_filter := 1                                                    // New Addition
+
+entry_cond_lookback = input(20, "Entry Condition Lookback")
+exit_cond_lookback = input(10, "Exit Condition Lookback")
+
+entry_cond = highest(high, entry_cond_lookback)[1]
+exit_cond = lowest(low, exit_cond_lookback)[1]
+
+plot(entry_cond,color=color.blue,linewidth=3)
+plot(exit_cond,color=color.orange,linewidth=3)
+plot(coin_ema_50,color=color.green,linewidth=1)
+plot(coin_ema_200,color=color.red,linewidth=1)
+
+long_signal = close > entry_cond and market_index_filter and coin_filter //Coin Filter added
+exit_signal = low < exit_cond
+
+entry_price = (long_signal and strategy.position_size==0) ? entry_cond+syminfo.mintick : na
+exit_price = (exit_signal and strategy.position_size>0) ? exit_cond-syminfo.mintick : na
+
+long_SL = valuewhen(not na(entry_price), close-(2*pine_atr(20)), 0)
+
+if(inDateRange and long_signal)
+    strategy.entry(id="Long Entry", long=strategy.long, stop=entry_price, comment="Long Entry")
+
+strategy.exit(id="Long SL", from_entry="Long Entry", qty_percent=100, stop=long_SL, comment="Long SL")
+
+strategy.close(id="Long Entry", when=exit_signal, qty_percent=100, comment="Long Close")
