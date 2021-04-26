@@ -55,10 +55,10 @@ crossLower = crossunder(close, lower)
 
 // strategy.risk.max_position_size(100)
 
-if (crossUpper and inDateRange )
+if (crossUpper and inDateRange  and hour(time) < 15)
     strategy.entry("VolExpLE", strategy.long, when = open > high[1], stop=low - syminfo.mintick, comment="VolExpLE")
     
-if (crossLower and inDateRange )
+if (crossLower and inDateRange  and hour(time) < 15)
     strategy.entry("VolExpSE", strategy.short, when = open < low[1], stop=high + syminfo.mintick, comment="VolExpSE")
 
 strategy.close_all(when = time("D") and (hour(time) == 15 and minute(time) == 30), comment = "close all entries")
