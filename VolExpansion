@@ -50,20 +50,28 @@ crossLower = crossunder(close, lower)
 //       nz(pos[1])
 
 
-// plotshape(long_signal, location=location.belowbar,  color=color.blue, style=shape.arrowup,   text="Long Entry",  title='Buy')
-// plotshape(short_signal, location=location.abovebar, color=color.red,  style=shape.arrowdown, text="Short Entry", title='Sell')
-
 // strategy.risk.max_position_size(100)
 
 bprice = (crossUpper and inDateRange and time("D") and  hour(time) < 15 and strategy.position_size<=0) ? high+syminfo.mintick : na
 sprice = (crossLower and inDateRange and time("D") and hour(time) < 15 and strategy.position_size>=0) ? low-syminfo.mintick : na
 
+// initial Buy stop loss price
+buy_slprice = valuewhen(not na(bprice), low-syminfo.mintick, 0)
+
+// initial Sell stop loss price
+sell_slprice = valuewhen(not na(sprice), high+syminfo.mintick, 0)
+
 if (crossUpper and inDateRange and time("D") and hour(time) < 15 )
     strategy.entry("VolExpLE", strategy.long, stop=bprice, comment="VolExpLE")
     
+// Buy stop loss entry
+strategy.exit(id="Buy Position SL", from_entry="VolExpLE", qty_percent=100, stop=buy_slprice, comment="Buy Position SL")
 
 if (crossLower and inDateRange  and time("D") and hour(time) < 15 )
     strategy.entry("VolExpSE", strategy.short, stop=sprice, comment="VolExpSE")
+
+// Sell stop loss entry
+strategy.exit(id="Sell Position SL", from_entry="VolExpSE", qty_percent=100, stop=sell_slprice, comment="Sell Position SL")
 
 strategy.close_all(when = time("D") and (hour(time) == 15 and minute(time) == 30), comment = "close all entries")
 
