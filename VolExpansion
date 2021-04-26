@@ -37,27 +37,18 @@ fill(p1, p2, title = "Background", color=#198787, transp=95)
 crossUpper = crossover(close, upper)
 crossLower = crossunder(close, lower)
 
-pos = 0
+// pos = 0
 
-long_signal  = nz(pos[1]) <  pyram and crossUpper
+// long_signal  = nz(pos[1]) <  pyram and crossUpper
 
-short_signal = nz(pos[1]) > -pyram and crossLower
+// short_signal = nz(pos[1]) > -pyram and crossLower
 
-pos := nz(pos[1]) < 0 and long_signal ? 1 :
-       long_signal ? nz(pos[1]) + 1 :
-       nz(pos[1]) > 0 and short_signal ? -1 :
-       short_signal ? nz(pos[1]) - 1 :
-       nz(pos[1])
+// pos := nz(pos[1]) < 0 and long_signal ? 1 :
+//       long_signal ? nz(pos[1]) + 1 :
+//       nz(pos[1]) > 0 and short_signal ? -1 :
+//       short_signal ? nz(pos[1]) - 1 :
+//       nz(pos[1])
 
-
-// var dailyTaskDone = false
-// newDay = change(time("D"))
-// doOncePerDay = long_signal or short_signal     // Your condition here.
-// dailyTaskDone := doOncePerDay or (dailyTaskDone and not newDay)
-
-// plotchar(newDay, "newDay", "▼", location.top, transp = 60)
-// plotchar(doOncePerDay, "doOncePerDay", "•", location.top, transp = 0)
-// bgcolor(dailyTaskDone ? color.orange : na)
 
 // plotshape(long_signal, location=location.belowbar,  color=color.blue, style=shape.arrowup,   text="Long Entry",  title='Buy')
 // plotshape(short_signal, location=location.abovebar, color=color.red,  style=shape.arrowdown, text="Short Entry", title='Sell')
@@ -66,12 +57,9 @@ pos := nz(pos[1]) < 0 and long_signal ? 1 :
 
 if (crossUpper and inDateRange )
     strategy.entry("VolExpLE", strategy.long, when = open > high[1], stop=valuewhen(crossUpper and inDateRange,low,0), comment="VolExpLE")
-    strategy.close_all(when = change(time("D")) and (hour(time) == 15 and minute(time) == 30), comment = "close all entries")
-    // strategy.exit("exit","VolExpLE",when = (hour(time) == 15 and minute(time) == 30))
-
-//if (cancelScond)
-//    strategy.cancel("KltChSE")
-
+    
 if (crossLower and inDateRange )
-    strategy.entry("VolExpSE", strategy.short, when = open < low[1], stop=valuewhen(crossUpper and inDateRange,low,0), comment="VolExpSE")
-    strategy.close_all(when = change(time("D")) and (hour(time) == 15 and minute(time) == 30), comment = "close all entries")
+    strategy.entry("VolExpSE", strategy.short, when = open < low[1], stop=valuewhen(crossLower and inDateRange,high,0), comment="VolExpSE")
+
+strategy.close_all(when = time("D") and (hour(time) == 15 and minute(time) == 30), comment = "close all entries")
+
