@@ -64,30 +64,30 @@ buy_slprice = valuewhen(not na(bprice), low-syminfo.mintick, 0)
 sell_slprice = valuewhen(not na(sprice), high+syminfo.mintick, 0)
 
 // long profit target
-TP_long = bprice + ((bprice - buy_slprice) * TP_multiple)
+TP_long = valuewhen(not na(bprice), bprice + ((bprice - buy_slprice) * TP_multiple), 0)
 
 // short profit target
-TP_short = sprice - ((sell_slprice - sprice) * TP_multiple)
+TP_short = valuewhen(not na(sprice), sprice - ((sell_slprice - sprice) * TP_multiple), 0)
 
 // Long entry
 if (crossUpper and inDateRange and time("D") and hour(time) < 15 )
     strategy.entry("VolExpLE", strategy.long, stop=bprice, comment="VolExpLE")
 
-// Long stop loss hit
-strategy.exit(id="Buy Position SL", from_entry="VolExpLE", qty_percent=100, stop=buy_slprice, limit=TP_long, comment="Long Exit")
-
 // Long TP
-//strategy.exit(id="Buy Position TP", from_entry="VolExpLE", qty_percent=100,  comment="Long TP")
+strategy.exit(id="Buy Position TP", from_entry="VolExpLE", qty_percent=100, limit=TP_long, comment="Long TP")
+
+// Long stop loss hit
+strategy.exit(id="Buy Position SL", from_entry="VolExpLE", qty_percent=100, stop=buy_slprice, comment="Long SL")
 
 // Short entry
 if (crossLower and inDateRange  and time("D") and hour(time) < 15 )
     strategy.entry("VolExpSE", strategy.short, stop=sprice, comment="VolExpSE")
 
 // Short TP
-strategy.exit(id="Sell Position TP", from_entry="VolExpSE", qty_percent=100, limit=TP_short, stop=sell_slprice, comment="Short Exit")
+strategy.exit(id="Sell Position TP", from_entry="VolExpSE", qty_percent=100, limit=TP_short, comment="Short TP")
 
 // Short stop loss hit
-//strategy.exit(id="Sell Position SL", from_entry="VolExpSE", qty_percent=100, comment="Short SL")
+strategy.exit(id="Sell Position SL", from_entry="VolExpSE", qty_percent=100, stop=sell_slprice, comment="Short SL")
 
 // Close all trades at 3:30 PM
 strategy.close_all(when = time("D") and (hour(time) == 15 and minute(time) == 30), comment = "close all entries")
