@@ -1,5 +1,15 @@
 //@version=4
-strategy(shorttitle="BB_3SD",title="Vol Exp Breakout Strategy",process_orders_on_close=true,calc_on_order_fills=true,pyramiding=1,initial_capital=100000,currency='USD',default_qty_type=strategy.percent_of_equity,commission_type=strategy.commission.percent,commission_value=0.0,overlay=true)
+strategy(shorttitle="BB_3SD",
+         title="Vol Exp Breakout Strategy",
+         process_orders_on_close=true,
+         calc_on_order_fills=true,
+         pyramiding=1,
+         initial_capital=100000,
+         currency='USD',
+         default_qty_type=strategy.percent_of_equity,
+         commission_type=strategy.commission.percent,
+         commission_value=0.0,
+         overlay=true)
 
 startDate = input(title="Start Date", type=input.integer,
      defval=1, minval=1, maxval=31)
@@ -37,8 +47,8 @@ fill(p1, p2, title = "Background", color=#198787, transp=95)
 crossUpper = crossover(close, upper)
 crossLower = crossunder(close, lower)
 
-Profit_ATR_Multiple = input(100, "Profit ATR Multiple", type = input.integer, minval = 1, maxval = 500)
-ATR_Factor = input(2, "Profit ATR Multiple", type = input.integer, minval = 1, maxval = 10)
+Profit_ATR_Lookback = input(100, "Profit ATR Lookback", type = input.integer, minval = 1, maxval = 500)
+ATR_Multiple = input(2, "Profit ATR Multiple", type = input.integer, minval = 1, maxval = 10)
 
 //ATR Definition with EMA (built in ATR uses RMA)
 pine_atr(length) =>
@@ -59,16 +69,16 @@ buy_slprice = valuewhen(not na(bprice), low-syminfo.mintick, 0)
 sell_slprice = valuewhen(not na(sprice), high+syminfo.mintick, 0)
 
 // Buy profit price
-buy_profit_target = valuewhen(not na(bprice), bprice+ATR_Factor*pine_atr(Profit_ATR_Multiple), 0)
+buy_profit_target = valuewhen(not na(bprice), bprice+ATR_Multiple*pine_atr(Profit_ATR_Lookback), 0)
 
 // Sell profit price
-sell_profit_target = valuewhen(not na(sprice), sprice-ATR_Factor*pine_atr(Profit_ATR_Multiple), 0)
+sell_profit_target = valuewhen(not na(sprice), sprice-ATR_Multiple*pine_atr(Profit_ATR_Lookback), 0)
 
 if (crossUpper and inDateRange and time("D") and hour(time) < 15 )
     strategy.entry("VolExpLE", strategy.long, stop=bprice, comment="VolExpLE")
     
 //Buy profit level
-strategy.exit(id="Exit Buy", from_entry="VolExpLE",  limit=buy_profit_target,stop=buy_slprice, qty_percent=100, comment="Exit Buy") //qty_percent=first_TP_perc,
+strategy.exit(id="Exit Buy", from_entry="VolExpLE", limit=buy_profit_target, stop=buy_slprice, qty_percent=100, comment="Exit Buy") //qty_percent=first_TP_perc,
 
 // Buy stop loss entry
 // strategy.exit(id="Buy Position SL", from_entry="VolExpLE", qty_percent=100, stop=buy_slprice, comment="Buy Position SL")
@@ -79,7 +89,7 @@ if (crossLower and inDateRange  and time("D") and hour(time) < 15 )
     strategy.entry("VolExpSE", strategy.short, stop=sprice, comment="VolExpSE")
 
 //Sell profit level
-strategy.exit(id="Exit Sell", from_entry="VolExpSE",  limit=sell_profit_target,stop=sell_slprice, qty_percent=100, comment="Exit Sell") //qty_percent=first_TP_perc,
+strategy.exit(id="Exit Sell", from_entry="VolExpSE", limit=sell_profit_target, stop=sell_slprice, qty_percent=100, comment="Exit Sell") //qty_percent=first_TP_perc,
 
 // Sell stop loss entry
 // strategy.exit(id="Sell Position SL", from_entry="VolExpSE", qty_percent=100, stop=sell_slprice, comment="Sell Position SL")
