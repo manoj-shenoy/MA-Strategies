@@ -1,0 +1,109 @@
+//@version=4
+strategy(shorttitle="BB_3SD",
+         title="Vol Exp Breakout Strategy",
+         process_orders_on_close=true,
+         calc_on_order_fills=true,
+         pyramiding=1,
+         initial_capital=100000,
+         currency='USD',
+         default_qty_type=strategy.percent_of_equity,
+         commission_type=strategy.commission.percent,
+         commission_value=0.0,
+         overlay=true)
+
+startDate = input(title="Start Date", type=input.integer,
+     defval=1, minval=1, maxval=31)
+startMonth = input(title="Start Month", type=input.integer,
+     defval=1, minval=1, maxval=12)
+startYear = input(title="Start Year", type=input.integer,
+     defval=2018, minval=1900, maxval=2100)
+
+endDate = input(title="End Date", type=input.integer,
+     defval=31, minval=1, maxval=31)
+endMonth = input(title="End Month", type=input.integer,
+     defval=12, minval=1, maxval=12)
+endYear = input(title="End Year", type=input.integer,
+     defval=2030, minval=1900, maxval=2100)
+
+inDateRange = (time >= timestamp(syminfo.timezone, startYear,
+         startMonth, startDate, 0, 0)) and
+     (time < timestamp(syminfo.timezone, endYear, endMonth, endDate, 0, 0))
+
+pyram  = input(1, "Pyramiding", minval=1)
+
+length = input(20, minval=1)
+src = input(close, title="Source")
+mult = input(3.0, minval=0.001, maxval=50, title="StdDev")
+basis = sma(src, length)
+dev = mult * stdev(src, length)
+upper = basis + dev
+lower = basis - dev
+offset = input(0, "Offset", type = input.integer, minval = -500, maxval = 500)
+plot(basis, "Basis", color=#872323, offset = offset)
+p1 = plot(upper, "Upper", color=color.teal, offset = offset)
+p2 = plot(lower, "Lower", color=color.teal, offset = offset)
+fill(p1, p2, title = "Background", color=#198787, transp=95)
+
+crossUpper = crossover(close, upper)
+crossLower = crossunder(close, lower)
+
+Profit_ATR_Lookback = input(100, "Profit ATR Lookback", type = input.integer, minval = 1, maxval = 500)
+ATR_Multiple = input(2, "Profit ATR Multiple", type = input.integer, minval = 1, maxval = 10)
+
+max_equity_risk = input(1, "Max Equity Risk (%)", type=input.float, minval=1, maxval=100)
+
+//ATR Definition with EMA (built in ATR uses RMA)
+pine_atr(length) =>
+    trueRange = na(high[1])? high-low : max(max(high - low, abs(high - close[1])), abs(low - close[1]))
+    //true range can be also calculated with tr(true)
+    ema(trueRange, length)
+
+
+// strategy.risk.max_position_size(100)
+
+bprice = (crossUpper and inDateRange and time("D") and  hour(time) < 15 and strategy.position_size<=0) ? high+syminfo.mintick : na
+sprice = (crossLower and inDateRange and time("D") and hour(time) < 15 and strategy.position_size>=0) ? low-syminfo.mintick : na
+
+// initial Buy stop loss price
+buy_slprice = valuewhen(not na(bprice), low-syminfo.mintick, 0)
+
+// initial Sell stop loss price
+sell_slprice = valuewhen(not na(sprice), high+syminfo.mintick, 0)
+
+// Buy profit price
+buy_profit_target = valuewhen(not na(bprice), bprice+ATR_Multiple*pine_atr(Profit_ATR_Lookback), 0)
+
+// Sell profit price
+sell_profit_target = valuewhen(not na(sprice), sprice-ATR_Multiple*pine_atr(Profit_ATR_Lookback), 0)
+
+// Position size calculations for max equity risk (determining number of shares to buy/sell) //
+
+// Long pos size
+long_pos_size = ((strategy.equity*(max_equity_risk/100))/(valuewhen(not na(bprice), high-low+(2*syminfo.mintick), 0))) < strategy.equity ? (strategy.equity*(max_equity_risk/100))/(valuewhen(not na(bprice), high-low+(2*syminfo.mintick), 0)) : strategy.equity/close
+
+// Short pos size
+short_pos_size = ((strategy.equity*(max_equity_risk/100))/(valuewhen(not na(sprice), high-low+(2*syminfo.mintick), 0))) < strategy.equity ? (strategy.equity*(max_equity_risk/100))/(valuewhen(not na(sprice), high-low+(2*syminfo.mintick), 0)) : strategy.equity/close
+
+if (crossUpper and inDateRange and time("D") and hour(time) < 15 )
+    strategy.entry("VolExpLE", strategy.long, qty=long_pos_size, stop=bprice, comment="VolExpLE")
+    
+//Buy profit level
+strategy.exit(id="Exit Buy", from_entry="VolExpLE", limit=buy_profit_target, stop=buy_slprice, qty_percent=100, comment="Exit Buy") //qty_percent=first_TP_perc,
+
+// Buy stop loss entry
+// strategy.exit(id="Buy Position SL", from_entry="VolExpLE", qty_percent=100, stop=buy_slprice, comment="Buy Position SL")
+
+
+
+if (crossLower and inDateRange  and time("D") and hour(time) < 15 )
+    strategy.entry("VolExpSE", strategy.short, qty=short_pos_size, stop=sprice, comment="VolExpSE")
+
+//Sell profit level
+strategy.exit(id="Exit Sell", from_entry="VolExpSE", limit=sell_profit_target, stop=sell_slprice, qty_percent=100, comment="Exit Sell") //qty_percent=first_TP_perc,
+
+// Sell stop loss entry
+// strategy.exit(id="Sell Position SL", from_entry="VolExpSE", qty_percent=100, stop=sell_slprice, comment="Sell Position SL")
+
+strategy.close_all(when = time("D") and (hour(time) == 15 and minute(time) == 30), comment = "close all entries")
+
+// plot(buy_profit_target)
