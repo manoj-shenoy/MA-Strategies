@@ -102,3 +102,4 @@ strategy.exit(id="Sell Position SL", from_entry="VolExpSE", qty_percent=100, sto
 
 // Close all trades at 3:30 PM
 strategy.close_all(when = time("D") and (hour(time) == 15 and minute(time) == 30), comment = "close all entries")
+strategy.cancel_all(when = time("D") and (hour(time) == 15 and minute(time) == 30))
