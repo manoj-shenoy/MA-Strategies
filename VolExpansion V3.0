@@ -105,5 +105,6 @@ strategy.exit(id="Exit Sell", from_entry="VolExpSE", limit=sell_profit_target, s
 // strategy.exit(id="Sell Position SL", from_entry="VolExpSE", qty_percent=100, stop=sell_slprice, comment="Sell Position SL")
 
 strategy.close_all(when = time("D") and (hour(time) == 15 and minute(time) == 30), comment = "close all entries")
+strategy.cancel_all(when = time("D") and (hour(time) == 15 and minute(time) == 30))
 
 // plot(buy_profit_target)
