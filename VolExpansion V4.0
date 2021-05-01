@@ -100,6 +100,6 @@ strategy.exit(id="Sell Position TP", from_entry="VolExpSE", qty_percent=100, lim
 // Short stop loss hit
 strategy.exit(id="Sell Position SL", from_entry="VolExpSE", qty_percent=100, stop=sell_slprice, comment="Short SL")
 
-// Close all trades at 3:30 PM
-strategy.close_all(when = time("D") and (hour(time) == 15 and minute(time) == 30), comment = "close all entries")
+// Close all trades and cancel pending orders at 3:30 PM
 strategy.cancel_all(when = time("D") and (hour(time) == 15 and minute(time) == 30))
+strategy.close_all(when = time("D") and (hour(time) == 15 and minute(time) == 30), comment = "close all entries")
