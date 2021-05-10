@@ -1,0 +1,78 @@
+//@version=4
+strategy(shorttitle="TurtleV2.0",title="Turtle System Strategy V2.0", overlay=true)
+
+startDate = input(title="Start Date", type=input.integer,
+     defval=1, minval=1, maxval=31)
+startMonth = input(title="Start Month", type=input.integer,
+     defval=1, minval=1, maxval=12)
+startYear = input(title="Start Year", type=input.integer,
+     defval=2018, minval=1900, maxval=2100)
+
+endDate = input(title="End Date", type=input.integer,
+     defval=31, minval=1, maxval=31)
+endMonth = input(title="End Month", type=input.integer,
+     defval=12, minval=1, maxval=12)
+endYear = input(title="End Year", type=input.integer,
+     defval=2030, minval=1900, maxval=2100)
+
+inDateRange = (time >= timestamp(syminfo.timezone, startYear,
+         startMonth, startDate, 0, 0)) and
+     (time < timestamp(syminfo.timezone, endYear, endMonth, endDate, 0, 0))
+
+//pyram  = input(1, "Pyramiding", minval=1)
+
+TP_multiple = input(100, title="Target Multiple", type=input.float, minval=1)
+
+// Donchian Periods
+DonchianHighPeriod = input(10, title="DonchianHighPeriod")
+DonchianLowPeriod = input(10, title="DonchianLowPeriod")
+
+//X period High and Low
+XperiodHigh = highest(high,DonchianHighPeriod)
+XperiodLow = lowest(low,DonchianLowPeriod)
+
+offset = input(1, "Offset", type = input.integer, minval = -500, maxval = 500)
+// plot(basis, "Basis", color=#872323, offset = offset)
+p1 = plot(XperiodHigh, "XperiodHigh", color=color.teal, offset = offset)
+p2 = plot(XperiodLow, "XperiodLow", color=color.teal, offset = offset)
+fill(p1, p2, title = "Background", color=#198787, transp=95)
+
+crossUpper = crossover(close, offset(XperiodHigh,1))
+crossLower = crossunder(close, offset(XperiodLow,1))
+
+// strategy.risk.max_position_size(100)
+
+bprice = (crossUpper and inDateRange and strategy.position_size<=0) ? high+syminfo.mintick : na 
+sprice = (crossLower and inDateRange and strategy.position_size>=0) ? low-syminfo.mintick : na
+
+// initial Buy stop loss price
+buy_slprice = valuewhen(not na(bprice), low-syminfo.mintick, 0)
+
+// initial Sell stop loss price
+sell_slprice = valuewhen(not na(sprice), high+syminfo.mintick, 0)
+
+// long profit target
+TP_long = valuewhen(not na(bprice), bprice + ((bprice - buy_slprice) * TP_multiple), 0)
+
+// short profit target
+TP_short = valuewhen(not na(sprice), sprice - ((sell_slprice - sprice) * TP_multiple), 0)
+
+// Long entry
+if (crossUpper and inDateRange )
+    strategy.entry("VolExpLE", strategy.long, stop=bprice, comment="VolExpLE")
+
+// Long TP
+strategy.exit(id="Buy Position TP", from_entry="VolExpLE", qty_percent=100, limit=TP_long, comment="Long TP")
+
+// Long stop loss hit
+strategy.exit(id="Buy Position SL", from_entry="VolExpLE", qty_percent=100, stop=buy_slprice, comment="Long SL")
+
+// Short entry
+if (crossLower and inDateRange )
+    strategy.entry("VolExpSE", strategy.short, stop=sprice, comment="VolExpSE")
+
+// Short TP
+strategy.exit(id="Sell Position TP", from_entry="VolExpSE", qty_percent=100, limit=TP_short, comment="Short TP")
+
+// Short stop loss hit
+strategy.exit(id="Sell Position SL", from_entry="VolExpSE", qty_percent=100, stop=sell_slprice, comment="Short SL")
