@@ -6,7 +6,7 @@ TURTLE V2.0 HAS ATR BASED PROFIT TARGETS AND MAX POSITION RISK SIZE
 
 
 
-1. Nikhil - Make changes in Turtle V 1.0 for correct entry abv 1 tick
+1. Nikhil - Make changes in Turtle V 1.0 for correct entry abv 1 tick and proper 1% loss when max 1% risk is selected
 2. Nikhil - Copy V 1.0 as V 2.0 and add Profit Target part from current V 2.0
 3. Nikhil - Portfolio VBA BT
 4. Nikhil - Replicate all steps from BB3SD Optimizations for Turtle System on Binance USDT Futures. 
