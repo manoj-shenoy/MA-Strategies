@@ -3,12 +3,12 @@ strategy("Turtle System Strategy V1.0",
           overlay=true,
           process_orders_on_close=true,
           calc_on_order_fills=false,
-          initial_capital=1,
-          currency='BTC',
+          initial_capital=100000,
+          currency='USD',
           default_qty_type=strategy.percent_of_equity,
           default_qty_value=100,
           commission_type=strategy.commission.percent,
-          commission_value=0.1)
+          commission_value=0.04)
 
 startDate = input(title="Start Date", type=input.integer,
      defval=1, minval=1, maxval=31)
@@ -28,9 +28,9 @@ inDateRange = (time >= timestamp(syminfo.timezone, startYear,
          startMonth, startDate, 0, 0)) and
      (time < timestamp(syminfo.timezone, endYear, endMonth, endDate, 0, 0))
 
-market_filter_type = input(title="Market Filter Type", defval="EMA Cross", options=["EMA Cross", "Above 20 SMA", "None"])
+market_filter_type = input(title="Market Filter Type", defval="None", options=["EMA Cross", "Above 20 SMA", "None"])
 
-coin_filter_type = input(title="Coin Filter Type", defval="EMA Cross", options=["EMA Cross", "Above 20 SMA", "None"]) // New Addition
+coin_filter_type = input(title="Coin Filter Type", defval="None", options=["EMA Cross", "Above 20 SMA", "None"]) // New Addition
 
 btc_fast_ema = input(50, "BTC Fast EMA Lookback")
 btc_slow_ema = input(200, "BTC Slow EMA Lookback")
@@ -77,25 +77,59 @@ else if(coin_filter_type == "None")                                     // New A
 entry_cond_lookback = input(20, "Entry Condition Lookback")
 exit_cond_lookback = input(10, "Exit Condition Lookback")
 
-entry_cond = highest(high, entry_cond_lookback)[1]
-exit_cond = lowest(low, exit_cond_lookback)[1]
+long_entry_cond = highest(high, entry_cond_lookback)[1]
+long_exit_cond = lowest(low, exit_cond_lookback)[1]
 
-plot(entry_cond,color=color.blue,linewidth=3)
-plot(exit_cond,color=color.orange,linewidth=3)
-plot(coin_ema_50,color=color.green,linewidth=1)
-plot(coin_ema_200,color=color.red,linewidth=1)
+short_entry_cond = lowest(low, entry_cond_lookback)[1]
+short_exit_cond = highest(high, exit_cond_lookback)[1]
 
-long_signal = close > entry_cond and market_index_filter and coin_filter //Coin Filter added
-exit_signal = low < exit_cond
+plot(long_entry_cond,color=color.blue,linewidth=3)
+plot(long_exit_cond,color=color.orange,linewidth=1)
 
-entry_price = (long_signal and strategy.position_size==0) ? entry_cond+syminfo.mintick : na
-exit_price = (exit_signal and strategy.position_size>0) ? exit_cond-syminfo.mintick : na
+plot(short_entry_cond,color=color.red,linewidth=3)
+plot(short_exit_cond,color=color.fuchsia,linewidth=1)
 
-long_SL = valuewhen(not na(entry_price), close-(2*pine_atr(20)), 0)
+// plot(coin_ema_50,color=color.green,linewidth=1)
+// plot(coin_ema_200,color=color.red,linewidth=1)
+
+long_signal = close > long_entry_cond and market_index_filter and coin_filter //Coin Filter added
+exit_long_signal = low < long_exit_cond
+
+short_signal = close < short_entry_cond and market_index_filter and coin_filter //Coin Filter added
+exit_short_signal = high > short_exit_cond
+
+long_entry_price = (long_signal and strategy.position_size<=0) ? long_entry_cond+syminfo.mintick : na
+long_exit_price = (exit_long_signal and strategy.position_size>0) ? long_exit_cond-syminfo.mintick : na
+
+short_entry_price = (short_signal and strategy.position_size>=0) ? short_entry_cond-syminfo.mintick : na
+short_exit_price = (exit_short_signal and strategy.position_size<0) ? short_exit_cond+syminfo.mintick : na
+
+long_SL = valuewhen(not na(long_entry_price), close-(2*pine_atr(20)), 0)
+short_SL = valuewhen(not na(short_entry_price), close+(2*pine_atr(20)), 0)
+
+// Position size calculations for max equity risk (determining number of shares to buy/sell) //
+
+max_equity_risk = input(1, "Max Equity Risk (%)", type=input.float, minval=1, maxval=100)
+
+// Long pos size
+long_pos_size = ((strategy.equity*(max_equity_risk/100))/(valuewhen(not na(long_entry_price), high-low+(2*syminfo.mintick), 0))) < strategy.equity/close ? (strategy.equity*(max_equity_risk/100))/(valuewhen(not na(long_entry_price), high-low+(2*syminfo.mintick), 0)) : strategy.equity/close
+
+// Short pos size
+short_pos_size = ((strategy.equity*(max_equity_risk/100))/(valuewhen(not na(short_entry_price), high-low+(2*syminfo.mintick), 0))) < strategy.equity/close ? (strategy.equity*(max_equity_risk/100))/(valuewhen(not na(short_entry_price), high-low+(2*syminfo.mintick), 0)) : strategy.equity/close
+
+
 
 if(inDateRange and long_signal)
-    strategy.entry(id="Long Entry", long=strategy.long, stop=entry_price, comment="Long Entry")
+    strategy.entry(id="Long Entry", long=strategy.long, qty=long_pos_size, stop=long_entry_price, comment="Long Entry")
 
 strategy.exit(id="Long SL", from_entry="Long Entry", qty_percent=100, stop=long_SL, comment="Long SL")
 
-strategy.close(id="Long Entry", when=exit_signal, qty_percent=100, comment="Long Close")
+strategy.close(id="Long Entry", when=exit_long_signal, qty_percent=100, comment="Long Close")
+
+
+if(inDateRange and short_signal)
+    strategy.entry(id="Short Entry", long=strategy.short, qty=short_pos_size, stop=short_entry_price, comment="Short Entry")
+
+strategy.exit(id="Short SL", from_entry="Short Entry", qty_percent=100, stop=short_SL, comment="Short SL")
+
+strategy.close(id="Short Entry", when=exit_short_signal, qty_percent=100, comment="Short Close")
