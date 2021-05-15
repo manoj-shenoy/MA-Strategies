@@ -75,7 +75,7 @@ else if(coin_filter_type == "None")                                     // New A
     coin_filter := 1                                                    // New Addition
 
 entry_cond_lookback = input(20, "Entry Condition Lookback")
-exit_cond_lookback = input(10, "Exit Condition Lookback")
+exit_cond_lookback = input(20, "Exit Condition Lookback")
 
 long_entry_cond = highest(high, entry_cond_lookback)[1]
 long_exit_cond = lowest(low, exit_cond_lookback)[1]
@@ -109,7 +109,7 @@ short_SL = valuewhen(not na(short_entry_price) and strategy.position_size>=0, cl
 
 // Position size calculations for max equity risk (determining number of shares to buy/sell) //
 
-max_equity_risk = input(1, "Max Equity Risk (%)", type=input.float, minval=1, maxval=100)
+max_equity_risk = input(2, "Max Equity Risk (%)", type=input.float, minval=1, maxval=100)
 
 // Long pos size
 long_pos_size = ((strategy.equity*(max_equity_risk/100))/valuewhen(not na(long_signal), (high+syminfo.mintick)-(close-(2*pine_atr(20))), 0)) < strategy.equity/close ? ((strategy.equity*(max_equity_risk/100))/valuewhen(not na(long_signal), (high+syminfo.mintick)-(close-(2*pine_atr(20))), 0)) : strategy.equity/close
