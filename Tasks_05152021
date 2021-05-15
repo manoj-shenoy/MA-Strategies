@@ -1,0 +1,19 @@
+*** NOTE
+
+TURTLE V1.0 WILL BR FOR ACCUMULATING CRYPTO OVER LONG-TERM. THIS HAS NO PROFIT TARGET AND IS THE ORIGINAL TURTLE SYSTEM
+
+TURTLE V2.0 HAS ATR BASED PROFIT TARGETS AND MAX POSITION RISK SIZE
+
+
+
+1. Nikhil - Make changes in Turtle V 1.0 for correct entry abv 1 tick
+2. Nikhil - Copy V 1.0 as V 2.0 and add Profit Target part from current V 2.0
+3. Nikhil - Portfolio VBA BT
+4. Nikhil - Replicate all steps from BB3SD Optimizations for Turtle System on Binance USDT Futures. 
+            Parameters - Entry Lookback-20, Exit Lookback - 10,
+            Max Risk - 1%, ATR Lookback - 100, Optimize only for ATR Multiple
+5. Manoj -  Replicate all steps from BB3SD Optimizations for Turtle System on Binance USDT Futures. 
+            Parameters - Entry Lookback-20, Exit Lookback - 10,
+            Max Risk - 1%, ATR Lookback - 100, Optimize only for ATR Multiple
+6.Manoj - OMS for both BBSD3 & TurtleV2.0            
+            
