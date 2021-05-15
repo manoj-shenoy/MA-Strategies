@@ -98,24 +98,24 @@ exit_long_signal = low < long_exit_cond
 short_signal = close < short_entry_cond and market_index_filter and coin_filter //Coin Filter added
 exit_short_signal = high > short_exit_cond
 
-long_entry_price = (long_signal and strategy.position_size<=0) ? long_entry_cond+syminfo.mintick : na
-long_exit_price = (exit_long_signal and strategy.position_size>0) ? long_exit_cond-syminfo.mintick : na
+long_entry_price = valuewhen(long_signal and strategy.position_size<=0, high+syminfo.mintick, 0)
+long_exit_price = valuewhen(exit_long_signal and strategy.position_size>0, low-syminfo.mintick, 0)
 
-short_entry_price = (short_signal and strategy.position_size>=0) ? short_entry_cond-syminfo.mintick : na
-short_exit_price = (exit_short_signal and strategy.position_size<0) ? short_exit_cond+syminfo.mintick : na
+short_entry_price = valuewhen(short_signal and strategy.position_size>=0, low-syminfo.mintick, 0)
+short_exit_price = valuewhen(exit_short_signal and strategy.position_size<0, high+syminfo.mintick, 0)
 
-long_SL = valuewhen(not na(long_entry_price), close-(2*pine_atr(20)), 0)
-short_SL = valuewhen(not na(short_entry_price), close+(2*pine_atr(20)), 0)
+long_SL = valuewhen(not na(long_entry_price) and strategy.position_size<=0, close-(2*pine_atr(20)), 0)
+short_SL = valuewhen(not na(short_entry_price) and strategy.position_size>=0, close+(2*pine_atr(20)), 0)
 
 // Position size calculations for max equity risk (determining number of shares to buy/sell) //
 
 max_equity_risk = input(1, "Max Equity Risk (%)", type=input.float, minval=1, maxval=100)
 
 // Long pos size
-long_pos_size = ((strategy.equity*(max_equity_risk/100))/(valuewhen(not na(long_entry_price), high-low+(2*syminfo.mintick), 0))) < strategy.equity/close ? (strategy.equity*(max_equity_risk/100))/(valuewhen(not na(long_entry_price), high-low+(2*syminfo.mintick), 0)) : strategy.equity/close
+long_pos_size = ((strategy.equity*(max_equity_risk/100))/valuewhen(not na(long_signal), (high+syminfo.mintick)-(close-(2*pine_atr(20))), 0)) < strategy.equity/close ? ((strategy.equity*(max_equity_risk/100))/valuewhen(not na(long_signal), (high+syminfo.mintick)-(close-(2*pine_atr(20))), 0)) : strategy.equity/close
 
 // Short pos size
-short_pos_size = ((strategy.equity*(max_equity_risk/100))/(valuewhen(not na(short_entry_price), high-low+(2*syminfo.mintick), 0))) < strategy.equity/close ? (strategy.equity*(max_equity_risk/100))/(valuewhen(not na(short_entry_price), high-low+(2*syminfo.mintick), 0)) : strategy.equity/close
+short_pos_size = ((strategy.equity*(max_equity_risk/100))/valuewhen(not na(short_signal), (close+(2*pine_atr(20)))-(low-syminfo.mintick), 0)) < strategy.equity/close ? ((strategy.equity*(max_equity_risk/100))/valuewhen(not na(short_signal), (close+(2*pine_atr(20)))-(low-syminfo.mintick), 0)) : strategy.equity/close
 
 
 
