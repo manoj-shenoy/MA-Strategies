@@ -12,8 +12,12 @@ TURTLE V2.0 HAS ATR BASED PROFIT TARGETS AND MAX POSITION RISK SIZE
 4. Nikhil - Replicate all steps from BB3SD Optimizations for Turtle System on Binance USDT Futures. 
             Parameters - Entry Lookback-20, Exit Lookback - 10,
             Max Risk - 1%, ATR Lookback - 100, Optimize only for ATR Multiple
+            Do head to head comparison of profit taking vs. no profit taking wih Turtle system
+            Repeat all above steps for spot coins
 5. Manoj -  Replicate all steps from BB3SD Optimizations for Turtle System on Binance USDT Futures. 
             Parameters - Entry Lookback-20, Exit Lookback - 10,
             Max Risk - 1%, ATR Lookback - 100, Optimize only for ATR Multiple
+            Do head to head comparison of profit taking vs. no profit taking wih Turtle system
+            Repeat all above steps for spot coins            
 6. Manoj -   OMS for both BBSD3 & TurtleV2.0            
             
