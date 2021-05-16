@@ -17,3 +17,9 @@ TURTLE V2.0 HAS ALL FEATURES OF V1.0 WITHOUT SHORT TRADES. IT IS FOR LONG ONLY S
         
 4. Manoj -   OMS for both BBSD3 & TurtleV2.0            
             
+
+5. Nikhil - Research proposed methodology to search and select stocks with highest momentum every 1, 2 or 3 months 
+            to update universe of stocks to trade for both systems - BB 3SD and Turtle. This must be done in Amibroker 
+            with 10-15 years of historical data. Highest momentum stocks should be identified using daily data. Then
+            both systems must be back/forward tested on 5 min data of that subset of stocks. Backtest should be on 6
+            months and forward test on the next 1, 2, or 3 months.
