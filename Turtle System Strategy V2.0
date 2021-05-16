@@ -1,5 +1,5 @@
 //@version=4
-strategy("Turtle System Strategy V1.0",
+strategy("Turtle System Strategy V2.0",
           overlay=true,
           process_orders_on_close=true,
           calc_on_order_fills=false,
