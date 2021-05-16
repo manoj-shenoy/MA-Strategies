@@ -101,7 +101,7 @@ exit_long_signal = low < long_exit_cond
 long_entry_price = valuewhen(long_signal and strategy.position_size<=0, high+syminfo.mintick, 0)
 long_exit_price = valuewhen(exit_long_signal and strategy.position_size>0, low-syminfo.mintick, 0)
 
-short_entry_price = valuewhen(short_signal and strategy.position_size>=0, low-syminfo.mintick, 0)
+//short_entry_price = valuewhen(short_signal and strategy.position_size>=0, low-syminfo.mintick, 0)
 //short_exit_price = valuewhen(exit_short_signal and strategy.position_size<0, high+syminfo.mintick, 0)
 
 long_SL = valuewhen(not na(long_entry_price) and strategy.position_size<=0, close-(2*pine_atr(20)), 0)
