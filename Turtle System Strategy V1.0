@@ -32,7 +32,7 @@ market_filter_type = input(title="Market Filter Type", defval="None", options=["
 
 coin_filter_type = input(title="Coin Filter Type", defval="None", options=["EMA Cross", "Above 20 SMA", "None"]) // New Addition
 
-btc_fast_ema = input(50, "BTC Fast EMA Lookback")
+btc_fast_ema = input(50, "BTC Fast EMA Lookback") 
 btc_slow_ema = input(200, "BTC Slow EMA Lookback")
 
 coin_fast_ema = input(50, "Coin Fast EMA Lookback")                     // New Addition
@@ -107,6 +107,19 @@ short_exit_price = valuewhen(exit_short_signal and strategy.position_size<0, hig
 long_SL = valuewhen(not na(long_entry_price) and strategy.position_size<=0, close-(2*pine_atr(20)), 0)
 short_SL = valuewhen(not na(short_entry_price) and strategy.position_size>=0, close+(2*pine_atr(20)), 0)
 
+
+TP_on_off = input(defval='Off', title="Profit Target Toggle", type=input.string, options=['On', 'Off'])
+
+Profit_ATR_Lookback = input(100, "Profit ATR Lookback", type = input.integer, minval = 1, maxval = 5000)
+ATR_Multiple = input(2, "Profit ATR Multiple", type = input.integer, minval = 1, maxval = 100)
+
+// Buy profit price
+buy_profit_target = valuewhen(not na(long_entry_price), long_entry_price+ATR_Multiple*pine_atr(Profit_ATR_Lookback), 0)
+
+// Sell profit price
+sell_profit_target = valuewhen(not na(short_entry_price), short_entry_price-ATR_Multiple*pine_atr(Profit_ATR_Lookback), 0)
+
+
 // Position size calculations for max equity risk (determining number of shares to buy/sell) //
 
 max_equity_risk = input(2, "Max Equity Risk (%)", type=input.float, minval=1, maxval=100)
@@ -118,18 +131,34 @@ long_pos_size = ((strategy.equity*(max_equity_risk/100))/valuewhen(not na(long_s
 short_pos_size = ((strategy.equity*(max_equity_risk/100))/valuewhen(not na(short_signal), (close+(2*pine_atr(20)))-(low-syminfo.mintick), 0)) < strategy.equity/close ? ((strategy.equity*(max_equity_risk/100))/valuewhen(not na(short_signal), (close+(2*pine_atr(20)))-(low-syminfo.mintick), 0)) : strategy.equity/close
 
 
-
-if(inDateRange and long_signal)
-    strategy.entry(id="Long Entry", long=strategy.long, qty=long_pos_size, stop=long_entry_price, comment="Long Entry")
-
-strategy.exit(id="Long SL", from_entry="Long Entry", qty_percent=100, stop=long_SL, comment="Long SL")
-
-strategy.close(id="Long Entry", when=exit_long_signal, qty_percent=100, comment="Long Close")
-
-
-if(inDateRange and short_signal)
-    strategy.entry(id="Short Entry", long=strategy.short, qty=short_pos_size, stop=short_entry_price, comment="Short Entry")
-
-strategy.exit(id="Short SL", from_entry="Short Entry", qty_percent=100, stop=short_SL, comment="Short SL")
-
-strategy.close(id="Short Entry", when=exit_short_signal, qty_percent=100, comment="Short Close")
+if(TP_on_off=="On")
+    if(inDateRange and long_signal)
+        strategy.entry(id="Long Entry", long=strategy.long, qty=long_pos_size, stop=long_entry_price, comment="Long Entry")
+    
+    strategy.exit(id="Exit Long", from_entry="Long Entry", qty_percent=100, limit=buy_profit_target, stop=long_SL, comment="Exit Long")
+    
+    strategy.close(id="Long Entry", when=exit_long_signal, qty_percent=100, comment="Long Close")
+    
+    
+    if(inDateRange and short_signal)
+        strategy.entry(id="Short Entry", long=strategy.short, qty=short_pos_size, stop=short_entry_price, comment="Short Entry")
+    
+    strategy.exit(id="Exit Short", from_entry="Short Entry", qty_percent=100, limit=sell_profit_target, stop=short_SL, comment="Exit Short")
+    
+    strategy.close(id="Short Entry", when=exit_short_signal, qty_percent=100, comment="Short Close")
+    
+if(TP_on_off=="Off")
+    if(inDateRange and long_signal)
+        strategy.entry(id="Long Entry", long=strategy.long, qty=long_pos_size, stop=long_entry_price, comment="Long Entry")
+    
+    strategy.exit(id="Exit Long", from_entry="Long Entry", qty_percent=100, stop=long_SL, comment="Exit Long")
+    
+    strategy.close(id="Long Entry", when=exit_long_signal, qty_percent=100, comment="Long Close")
+    
+    
+    if(inDateRange and short_signal)
+        strategy.entry(id="Short Entry", long=strategy.short, qty=short_pos_size, stop=short_entry_price, comment="Short Entry")
+    
+    strategy.exit(id="Exit Short", from_entry="Short Entry", qty_percent=100, stop=short_SL, comment="Exit Short")
+    
+    strategy.close(id="Short Entry", when=exit_short_signal, qty_percent=100, comment="Short Close")
