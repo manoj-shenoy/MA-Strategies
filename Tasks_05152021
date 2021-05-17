@@ -7,18 +7,20 @@ TURTLE V2.0 HAS ALL FEATURES OF V1.0 WITHOUT SHORT TRADES. IT IS FOR LONG ONLY S
 
 1. Nikhil - Portfolio VBA BT
 
-2. Nikhil - Replicate all steps from BB3SD Optimizations for Turtle System on Binance USDT Futures. 
+2. Nikhil - Write study script for both BB_3SD and Turtle system
+
+3. Nikhil - Replicate all steps from BB3SD Optimizations for Turtle System on Binance USDT Futures. 
             Parameters - Entry Lookback-20, Exit Lookback - 20, Max Risk - 2%, Profit Target Toggle OFF
             No profit target - profit target kills the system
 
-3. Manoj -  Replicate all steps from BB3SD Optimizations for Turtle System on Binance USDT Futures. 
+4. Manoj -  Replicate all steps from BB3SD Optimizations for Turtle System on Binance USDT Futures. 
             Parameters - Entry Lookback-20, Exit Lookback - 20, Max Risk - 2%, Profit Target Toggle OFF
             No profit target - profit target kills the system
         
-4. Manoj -   OMS for both BBSD3 & TurtleV2.0            
+5. Manoj -   OMS for both BBSD3 & TurtleV2.0            
             
 
-5. Nikhil - Research proposed methodology to search and select stocks with highest momentum every 1, 2 or 3 months 
+6. Nikhil - Research proposed methodology to search and select stocks with highest momentum every 1, 2 or 3 months 
             to update universe of stocks to trade for both systems - BB 3SD and Turtle. This must be done in Amibroker 
             with 10-15 years of historical data. Highest momentum stocks should be identified using daily data. Then
             both systems must be back/forward tested on 5 min data of that subset of stocks. Backtest should be on 6
