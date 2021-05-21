@@ -26,3 +26,7 @@ TURTLE V2.0 HAS ALL FEATURES OF V1.0 WITHOUT SHORT TRADES. IT IS FOR LONG ONLY S
             both systems must be back/forward tested on 5 min data of that subset of stocks. Backtest should be on 6
             months and forward test on the next 1, 2, or 3 months.
             Backtest with maximum available historical data for all asset classes in AmiBroker - crypto, stocks, FX, CME futures
+            
+            **Note: For 3SD BB system in STOCKS ONLY -- will have a 3% target and 5% SL for each day. Keep taking additional trades
+            until either the SL or target level has been hit, or until day closes (if neither level is reached until then). 
+            Additionally, could have a trailing stop for the portfolio which stops trading at breakeven once 2% return is reached.
