@@ -1,4 +1,7 @@
 //@version=4
+
+//***** NOTE: This V4.0 Script is the the final version of the BB_3SD system with R-based TP. V3.0 is ATR-based TP *****//
+
 strategy(shorttitle="BB_3SD",title="Vol Exp Breakout Strategy", overlay=true)
 
 startDate = input(title="Start Date", type=input.integer,
