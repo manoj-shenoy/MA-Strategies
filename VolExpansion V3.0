@@ -1,4 +1,7 @@
 //@version=4
+
+//***** NOTE: This V3.0 Script is the the final version of the BB_3SD system with ATR TP. V4.0 is R-based TP *****//
+
 strategy(shorttitle="BB_3SD",
          title="Vol Exp Breakout Strategy",
          process_orders_on_close=true,
