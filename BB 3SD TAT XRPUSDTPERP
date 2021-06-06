@@ -1,0 +1,152 @@
+//@version=4
+strategy(shorttitle="BB_3SD_TAT",
+         title="BB 3SD Trend Anti-Trend",
+         process_orders_on_close=true,
+         calc_on_order_fills=true,
+         pyramiding=1,
+         initial_capital=100000,
+         currency='USD',
+         default_qty_type=strategy.percent_of_equity,
+         commission_type=strategy.commission.percent,
+         commission_value=0.0,
+         overlay=true)
+
+startDate = input(title="Start Date", type=input.integer,
+     defval=1, minval=1, maxval=31)
+startMonth = input(title="Start Month", type=input.integer,
+     defval=1, minval=1, maxval=12)
+startYear = input(title="Start Year", type=input.integer,
+     defval=2018, minval=1900, maxval=2100)
+
+endDate = input(title="End Date", type=input.integer,
+     defval=31, minval=1, maxval=31)
+endMonth = input(title="End Month", type=input.integer,
+     defval=12, minval=1, maxval=12)
+endYear = input(title="End Year", type=input.integer,
+     defval=2030, minval=1900, maxval=2100)
+
+inDateRange = (time >= timestamp(syminfo.timezone, startYear,
+         startMonth, startDate, 0, 0)) and
+     (time < timestamp(syminfo.timezone, endYear, endMonth, endDate, 0, 0))
+
+pyram  = input(1, "Pyramiding", minval=1)
+
+length = input(20, minval=1)
+src = input(close, title="Source")
+mult = input(3.0, minval=0.001, maxval=50, title="StdDev")
+basis = sma(src, length)
+dev = mult * stdev(src, length)
+upper = basis + dev
+lower = basis - dev
+offset = input(0, "Offset", type = input.integer, minval = -500, maxval = 500)
+//plot(basis, "Basis", color=#872323, offset = offset)
+p1 = plot(upper, "Upper", color=color.teal, offset = offset)
+p2 = plot(lower, "Lower", color=color.teal, offset = offset)
+fill(p1, p2, title = "Background", color=#198787, transp=95)
+
+//ATR Definition with EMA (built in ATR uses RMA)
+pine_atr(length) =>
+    trueRange = na(high[1])? high-low : max(max(high - low, abs(high - close[1])), abs(low - close[1]))
+    //true range can be also calculated with tr(true)
+    ema(trueRange, length)
+
+volume_lookback = input(15, "Volume Lookback", type=input.integer, minval=1)
+
+// Trend long and short signals
+trend_crossUpper = crossover(close, upper)   // Note: crossover function considers the price finishing >= to boll band (not just > boll band)
+trend_crossLower = crossunder(close, lower)  // Note: crossunder function considers the price finishing <= to boll band (not just < boll band)
+
+// Anti-trend long and short signals
+AT_long_signal = crossunder(low, lower) and close>open and volume[0]>highest(volume, volume_lookback)[1] and pine_atr(100)[0]>pine_atr(100)[1]
+AT_short_signal = crossover(high, upper) and close<open and volume[0]>highest(volume, volume_lookback)[1] and pine_atr(100)[0]>pine_atr(100)[1]
+
+Profit_ATR_Lookback = input(100, "Profit ATR Lookback", type = input.integer, minval = 1, maxval = 500)
+ATR_Multiple = input(2, "Profit ATR Multiple", type = input.float, minval = 1, maxval = 10)
+
+max_equity_risk = input(1, "Max Equity Risk (%)", type=input.float, minval=1, maxval=100)
+
+
+// Trend buy and sell conditions
+trend_bprice = (trend_crossUpper and strategy.position_size<=0) ? high+syminfo.mintick : na
+trend_sprice = (trend_crossLower and strategy.position_size>=0) ? low-syminfo.mintick : na
+
+// Anti-trend buy and sell conditions
+AT_bprice = (AT_long_signal and inDateRange and strategy.position_size<=0) ? high+syminfo.mintick : na
+AT_sprice = (AT_short_signal and inDateRange and strategy.position_size>=0) ? low-syminfo.mintick : na
+
+// Trend long stop loss price
+trend_buy_SL = valuewhen(not na(trend_bprice), low-syminfo.mintick, 0)
+
+// Trend short stop loss price
+trend_sell_SL = valuewhen(not na(trend_sprice), high+syminfo.mintick, 0)
+
+// Anti-trend long stop loss price
+AT_buy_SL = valuewhen(not na(AT_bprice), low-syminfo.mintick, 0)
+
+// Anti-trend short stop loss price
+AT_sell_SL = valuewhen(not na(AT_sprice), high+syminfo.mintick, 0)
+
+// Trend long TP price
+trend_buy_TP = valuewhen(not na(trend_bprice), trend_bprice+ATR_Multiple*pine_atr(Profit_ATR_Lookback), 0)
+
+// Trend short TP price
+trend_sell_TP = valuewhen(not na(trend_sprice), trend_sprice-ATR_Multiple*pine_atr(Profit_ATR_Lookback), 0)
+
+// Anti-trend long TP price
+AT_buy_TP = valuewhen(not na(AT_bprice), AT_bprice+ATR_Multiple*2*pine_atr(Profit_ATR_Lookback), 0)
+
+// Anti-trend short TP price
+AT_sell_TP = valuewhen(not na(AT_sprice), AT_sprice-ATR_Multiple*2*pine_atr(Profit_ATR_Lookback), 0)
+
+
+// Position size calculations for max equity risk (determining number of shares to buy/sell) //
+
+// Trend long pos size
+trend_long_pos_size = ((strategy.equity*(max_equity_risk/100))/(valuewhen(not na(trend_bprice), high-low+(2*syminfo.mintick), 0))) //< strategy.equity/close ? (strategy.equity*(max_equity_risk/100))/(valuewhen(not na(trend_bprice), high-low+(2*syminfo.mintick), 0)) : strategy.equity/close
+
+// Trend short pos size
+trend_short_pos_size = ((strategy.equity*(max_equity_risk/100))/(valuewhen(not na(trend_sprice), high-low+(2*syminfo.mintick), 0))) //< strategy.equity/close ? (strategy.equity*(max_equity_risk/100))/(valuewhen(not na(trend_sprice), high-low+(2*syminfo.mintick), 0)) : strategy.equity/close
+
+// Anti-trend long pos size
+AT_long_pos_size = ((strategy.equity*(max_equity_risk/100))/(valuewhen(not na(AT_bprice), high-low+(2*syminfo.mintick), 0))) //< strategy.equity/close ? (strategy.equity*(max_equity_risk/100))/(valuewhen(not na(AT_bprice), high-low+(2*syminfo.mintick), 0)) : strategy.equity/close
+
+// Anti-trend short pos size
+AT_short_pos_size = ((strategy.equity*(max_equity_risk/100))/(valuewhen(not na(AT_sprice), high-low+(2*syminfo.mintick), 0))) //< strategy.equity/close ? (strategy.equity*(max_equity_risk/100))/(valuewhen(not na(AT_sprice), high-low+(2*syminfo.mintick), 0)) : strategy.equity/close
+
+
+// Trade Entry/Exit Logic
+
+// Trend Long Entry
+if (trend_crossUpper and inDateRange and time("D") and hour(time) < 15)
+    strategy.entry("Trend Long", strategy.long, qty=trend_long_pos_size, stop=trend_bprice, comment="Trend Long")
+
+// Trend Long SL/TP
+strategy.exit(id="Exit Trend Long", from_entry="Trend Long", limit=trend_buy_TP, stop=trend_buy_SL, qty_percent=100, comment="Exit Trend Long")
+
+
+// Anti-trend Long Entry
+if (AT_long_signal and inDateRange and time("D") and hour(time) < 15)
+    strategy.entry("AT Long", strategy.long, qty=AT_long_pos_size, stop=AT_bprice, comment="AT Long")
+
+// Anti-trend Long SL/TP
+strategy.exit(id="Exit AT Long", from_entry="AT Long", limit=AT_buy_TP, stop=AT_buy_SL, qty_percent=100, comment="Exit AT Long")
+
+
+// Trend Short Entry
+if (trend_crossLower and inDateRange and time("D") and hour(time) < 15)
+    strategy.entry("Trend Short", strategy.short, qty=trend_short_pos_size, stop=trend_sprice, comment="Trend Short")
+
+// Trend Short SL/TP
+strategy.exit(id="Exit Trend Short", from_entry="Trend Short", limit=trend_sell_TP, stop=trend_sell_SL, qty_percent=100, comment="Exit Trend Short")
+
+
+// Anti-trend Short Entry
+if (AT_short_signal and inDateRange and time("D") and hour(time) < 15)
+    strategy.entry("AT Short", strategy.short, qty=AT_short_pos_size, stop=AT_sprice, comment="AT Short")
+
+// Anti-trend Short SL/TP
+strategy.exit(id="Exit AT Short", from_entry="AT Short", limit=AT_sell_TP, stop=AT_sell_SL, qty_percent=100, comment="Exit AT Short")
+
+
+//strategy.cancel_all(when = time("D") and (hour(time) == 15 and minute(time) == 30))
+//strategy.close_all(when = time("D") and (hour(time) == 15 and minute(time) == 30), comment = "close all entries")
