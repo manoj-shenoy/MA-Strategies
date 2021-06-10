@@ -148,6 +148,8 @@ if (AT_short_signal and inDateRange and time("D") and hour(time) < 15)
 strategy.exit(id="Exit AT Short", from_entry="AT Short", limit=AT_sell_TP, stop=AT_sell_SL, qty_percent=100, comment="Exit AT Short")
 
 
+// Cancelling trade orders if a new signal comes after a previous signal's order has not yet filled
+
 if(barssince(not na(trend_sprice)) < barssince(not na(trend_bprice)) or barssince(not na(AT_bprice)) < barssince(not na(trend_bprice)) or barssince(not na(AT_sprice)) < barssince(not na(trend_bprice)))
     strategy.cancel("Trend Long")
 
