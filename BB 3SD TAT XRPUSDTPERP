@@ -4,7 +4,7 @@ strategy(shorttitle="BB_3SD_TAT",
          process_orders_on_close=true,
          calc_on_order_fills=true,
          pyramiding=1,
-         initial_capital=100000,
+         initial_capital=10000,
          currency='USD',
          default_qty_type=strategy.percent_of_equity,
          commission_type=strategy.commission.percent,
@@ -53,12 +53,12 @@ pine_atr(length) =>
 volume_lookback = input(60, "Volume Lookback", type=input.integer, minval=1)
 
 // Trend long and short signals
-trend_crossUpper = close > upper and strategy.position_size==0 //crossover(close, upper)
-trend_crossLower = close < lower and strategy.position_size==0 //crossunder(close, lower)
+trend_long_signal = close>upper and strategy.position_size==0 //crossover(close, upper)
+trend_short_signal = close<lower and strategy.position_size==0 //crossunder(close, lower)
 
 // Anti-trend long and short signals
-AT_long_signal =  low < lower and close>open and volume[0]>highest(volume, volume_lookback)[1] and pine_atr(100)[0]>pine_atr(100)[1] and strategy.position_size==0 //crossunder(low, lower)
-AT_short_signal = high > upper and close<open and volume[0]>highest(volume, volume_lookback)[1] and pine_atr(100)[0]>pine_atr(100)[1] and strategy.position_size==0 //crossover(high, upper)
+AT_long_signal =  low<lower and close>open and volume[0]>highest(volume, volume_lookback)[1] and pine_atr(100)[0]>pine_atr(100)[1] and strategy.position_size==0 //crossunder(low, lower)
+AT_short_signal = high>upper and close<open and volume[0]>highest(volume, volume_lookback)[1] and pine_atr(100)[0]>pine_atr(100)[1] and strategy.position_size==0 //crossover(high, upper)
 
 Profit_ATR_Lookback = input(2, "Profit ATR Lookback", type = input.integer, minval = 1, maxval = 500)
 ATR_Multiple = input(1, "Profit ATR Multiple", type = input.float, minval = 1, maxval = 10)
@@ -67,8 +67,8 @@ max_equity_risk = input(3, "Max Equity Risk (%)", type=input.float, minval=1, ma
 
 
 // Trend buy and sell conditions
-trend_bprice = trend_crossUpper ? high+syminfo.mintick : na
-trend_sprice = trend_crossLower ? low-syminfo.mintick : na
+trend_bprice = trend_long_signal ? high+syminfo.mintick : na
+trend_sprice = trend_short_signal ? low-syminfo.mintick : na
 
 // Anti-trend buy and sell conditions
 AT_bprice = AT_long_signal ? high+syminfo.mintick : na
@@ -117,7 +117,7 @@ AT_short_pos_size = ((strategy.equity*(max_equity_risk/100))/(valuewhen(not na(A
 // Trade Entry/Exit Logic
 
 // Trend Long Entry
-if (trend_crossUpper and inDateRange and time("D") and hour(time) < 15)
+if (trend_long_signal and inDateRange and time("D") and hour(time) < 15)
     strategy.entry("Trend Long", strategy.long, qty=trend_long_pos_size, stop=trend_bprice, comment="Trend Long")
 
 // Trend Long SL/TP
@@ -133,7 +133,7 @@ strategy.exit(id="Exit AT Long", from_entry="AT Long", limit=AT_buy_TP, stop=AT_
 
 
 // Trend Short Entry
-if (trend_crossLower and inDateRange and time("D") and hour(time) < 15)
+if (trend_short_signal and inDateRange and time("D") and hour(time) < 15)
     strategy.entry("Trend Short", strategy.short, qty=trend_short_pos_size, stop=trend_sprice, comment="Trend Short")
 
 // Trend Short SL/TP
