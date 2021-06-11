@@ -53,12 +53,12 @@ pine_atr(length) =>
 volume_lookback = input(60, "Volume Lookback", type=input.integer, minval=1)
 
 // Trend long and short signals
-trend_long_signal = close>upper and strategy.position_size==0
-trend_short_signal = close<lower and strategy.position_size==0
+trend_long_signal = close[1]<upper[1] and close>=upper and strategy.position_size==0
+trend_short_signal = close[1]>lower[1] and close<=lower and strategy.position_size==0
 
 // Anti-trend long and short signals
-AT_long_signal =  low<lower and close>open and volume[0]>highest(volume, volume_lookback)[1] and pine_atr(100)[0]>pine_atr(100)[1] and strategy.position_size==0
-AT_short_signal = high>upper and close<open and volume[0]>highest(volume, volume_lookback)[1] and pine_atr(100)[0]>pine_atr(100)[1] and strategy.position_size==0
+AT_long_signal =  low[1]>lower[1] and low<=lower and close>open and volume[0]>highest(volume, volume_lookback)[1] and pine_atr(100)[0]>pine_atr(100)[1] and strategy.position_size==0
+AT_short_signal = high[1]<upper[1] and high>=upper and close<open and volume[0]>highest(volume, volume_lookback)[1] and pine_atr(100)[0]>pine_atr(100)[1] and strategy.position_size==0
 
 Profit_ATR_Lookback = input(2, "Profit ATR Lookback", type = input.integer, minval = 1, maxval = 500)
 ATR_Multiple = input(1, "Profit ATR Multiple", type = input.float, minval = 1, maxval = 10)
