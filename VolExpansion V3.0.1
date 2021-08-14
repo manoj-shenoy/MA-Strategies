@@ -1,0 +1,112 @@
+//@version=4
+strategy(shorttitle="BB_3SD3.0.1",
+         title="Vol Expansion Strategy 3.0.1",
+         process_orders_on_close=true,
+         calc_on_order_fills=true,
+         pyramiding=1,
+         initial_capital=10000,
+         currency='USD',
+         default_qty_type=strategy.percent_of_equity,
+         commission_type=strategy.commission.percent,
+         commission_value=0.04,
+         overlay=true)
+
+startDate = input(title="Start Date", type=input.integer,
+     defval=1, minval=1, maxval=31)
+startMonth = input(title="Start Month", type=input.integer,
+     defval=1, minval=1, maxval=12)
+startYear = input(title="Start Year", type=input.integer,
+     defval=2018, minval=1900, maxval=2100)
+
+endDate = input(title="End Date", type=input.integer,
+     defval=31, minval=1, maxval=31)
+endMonth = input(title="End Month", type=input.integer,
+     defval=12, minval=1, maxval=12)
+endYear = input(title="End Year", type=input.integer,
+     defval=2030, minval=1900, maxval=2100)
+
+inDateRange = (time >= timestamp(syminfo.timezone, startYear,
+         startMonth, startDate, 0, 0)) and
+     (time < timestamp(syminfo.timezone, endYear, endMonth, endDate, 0, 0))
+
+pyram  = input(1, "Pyramiding", minval=1)
+
+length = input(20, minval=1)
+src = input(close, title="Source")
+mult = input(3.0, minval=0.001, maxval=50, title="StdDev")
+basis = sma(src, length)
+dev = mult * stdev(src, length)
+upper = basis + dev
+lower = basis - dev
+offset = input(0, "Offset", type = input.integer, minval = -500, maxval = 500)
+//plot(basis, "Basis", color=#872323, offset = offset)
+p1 = plot(upper, "Upper", color=color.teal, offset = offset)
+p2 = plot(lower, "Lower", color=color.teal, offset = offset)
+fill(p1, p2, title = "Background", color=#198787, transp=95)
+
+//ATR Definition with EMA (built in ATR uses RMA)
+pine_atr(length) =>
+    trueRange = na(high[1])? high-low : max(max(high - low, abs(high - close[1])), abs(low - close[1]))
+    //true range can be also calculated with tr(true)
+    ema(trueRange, length)
+
+// Trend long and short signals
+long_signal = high>=upper and high[0]>highest(high, 25)[1] and close<upper and strategy.position_size==0
+short_signal = low<=lower and low[0]<lowest(low, 25)[1] and close>lower and strategy.position_size==0
+
+Profit_ATR_Lookback = input(20, "Profit ATR Lookback", type = input.integer, minval = 1, maxval = 500)
+ATR_Multiple = input(4, "Profit ATR Multiple", type = input.float, minval = 1, maxval = 10)
+
+max_equity_risk = input(1, "Max Equity Risk (%)", type=input.float, minval=1, maxval=100)
+
+
+// Trend buy and sell conditions
+bprice = long_signal ? high+syminfo.mintick : na
+sprice = short_signal ? low-syminfo.mintick : na
+
+// Trend long and short stop loss prices
+long_SL = valuewhen(not na(bprice), lowest(low, 25)[1], 0)
+short_SL = valuewhen(not na(sprice), highest(high, 25)[1], 0)
+
+// Trend long and short TP price
+long_TP = valuewhen(not na(bprice), bprice+ATR_Multiple*pine_atr(Profit_ATR_Lookback), 0)
+short_TP = valuewhen(not na(sprice), sprice-ATR_Multiple*pine_atr(Profit_ATR_Lookback), 0)
+
+
+// Position size calculations for max equity risk (determining number of shares to buy/sell) //
+
+// Trend long pos size
+long_pos_size = ((strategy.equity*(max_equity_risk/100))/(valuewhen(not na(bprice), high-lowest(low, 25)[1]+syminfo.mintick, 0)))
+
+// Trend short pos size
+short_pos_size = ((strategy.equity*(max_equity_risk/100))/(valuewhen(not na(sprice), highest(high, 25)[1]-low+syminfo.mintick, 0)))
+
+
+// Trade Entry/Exit Logic
+
+// Long Entry
+if (long_signal and inDateRange and time("D") and hour(time) < 15)
+    strategy.entry("Long", strategy.long, qty=long_pos_size, stop=bprice, comment="Long")
+
+// Long SL/TP
+strategy.exit(id="Exit Long", from_entry="Long", limit=long_TP, stop=long_SL, qty_percent=100, comment="Exit Long")
+
+
+// Short Entry
+if (short_signal and inDateRange and time("D") and hour(time) < 15)
+    strategy.entry("Short", strategy.short, qty=short_pos_size, stop=sprice, comment="Trend Short")
+
+// Short SL/TP
+strategy.exit(id="Exit Short", from_entry="Short", limit=short_TP, stop=short_SL, qty_percent=100, comment="Exit Short")
+
+
+// Cancelling trade orders if a new signal comes after a previous signal's order has not yet filled
+
+if(barssince(not na(sprice)) < barssince(not na(bprice)))
+    strategy.cancel("Long")
+
+if(barssince(not na(bprice)) < barssince(not na(sprice)))
+    strategy.cancel("Short")
+
+//strategy.cancel_all(when = time("D") and (hour(time) == 15 and minute(time) == 30))
+//strategy.close_all(when = time("D") and (hour(time) == 15 and minute(time) == 30), comment = "close all entries")
